@@ -61,29 +61,19 @@ class ChessBoard : public ui::ImGuiGLWindow
 private:
     game_t game;
     std::unique_ptr<PieceTexture> pieces;
-    pgn_db_t db;
-    move_tree_t *move;
 
 public:
-    ChessBoard(unsigned int width, unsigned int height, const std::string &title, const std::string &pgn_file)
+    ChessBoard(unsigned int width, unsigned int height, const std::string &title)
         : ui::ImGuiGLWindow(width, height, title),
           pieces(nullptr)
     {
-        pgn_parse(&db, pgn_file.c_str());
-        move = new move_tree_t({
-            .state = game_t::FromStartingPosition().getState(),
-        });
-        auto mt = pgn_moves(&db, 0);
-        // std::cout << *mt << std::endl;
-        move->AddChild(mt);
     }
 
     bool OnPostInit() override
     {
         pieces = std::make_unique<PieceTexture>("assets/images/pieces.png");
         pieces->SetTargetWidth(75);
-        auto m = move->value;
-        game = m != nullptr ? game_t(m->state) : game_t::FromStartingPosition();
+        game = game_t::FromStartingPosition();
         return true;
     }
 
@@ -94,86 +84,13 @@ public:
         bool showdemo = true;
         ui::ShowDemoWindow(&showdemo);
 
-        ui::Begin("Moves");
-
-        ui::BeginListBox("Moves");
-
-        bool isLastAlternate = false;
-        auto mt = pgn_moves(&db, 0);
-        for (auto *move_tree : *mt)
-        {
-            auto m = move_tree->value;
-            auto isAlternate = move_tree->isAlternate();
-            auto move_num = m->state.full_move_number;
-            auto move_side = m->state.side ^ 1;
-            std::string move_text = "";
-            int text_size = 50;
-
-            if (isAlternate)
-            {
-                text_size = 100;
-                if (move_side == WHITE)
-                    ui::NewLine();
-                move_text += "\t+ ";
-
-                if (move_side == BLACK)
-                    move_text += std::to_string(move_num) + "... ";
-            }
-
-            if (!isAlternate && isLastAlternate && move_side == BLACK)
-                move_text += std::to_string(move_num) + "... ";
-
-            if (move_side == WHITE)
-            {
-                move_text += std::to_string(move_num) + ". ";
-                ui::SetNextItemAllowOverlap();
-            }
-
-            char san[10];
-            move_to_san(&m->move, san);
-            move_text += std::string(san);
-
-            if (ui::Selectable(move_text.c_str(), move == move_tree, 0, ImVec2(text_size, 0)))
-            {
-                move = move_tree;
-                game = game_t(m->state);
-            }
-            if (move_side == WHITE)
-                ui::SameLine();
-        }
-
-        ui::EndListBox();
-
-        if (ui::ButtonEx("Previous", ImVec2(100, 100), ImGuiButtonFlags_PressedOnClickRelease))
-        {
-            if (move->parent != nullptr)
-            {
-                move = move->parent;
-                auto m = move->value;
-                game = m != nullptr ? game_t(m->state) : game_t::FromStartingPosition();
-            }
-        }
-
-        if (ui::ButtonEx("Next", ImVec2(100, 100), ImGuiButtonFlags_PressedOnClickRelease))
-        {
-            if (move->next != nullptr)
-            {
-                move = move->next;
-                auto m = move->value;
-                game = m != nullptr ? game_t(m->state) : game_t::FromStartingPosition();
-            }
-        }
-
-        ui::End();
-
         ui::Begin("ChessBoard");
 
         auto pos = ui::GetCurrentWindow()->DC.CursorPos;
         auto draw_list = ui::GetWindowDrawList();
         auto target_size = pieces->GetTargetSize();
 
-        static int selected = no_sq;
-        static s_tree_t move_tree;
+        static move_t *selected = nullptr;
 
         // draw chess board with pieces
         for (int row = 0; row < 8; row++)
@@ -197,65 +114,55 @@ public:
                     &held,
                     ImGuiButtonFlags_PressedOnRelease);
 
-                if (pressed && move_tree.value != nullptr)
+                if (pressed)
                 {
-                    auto it = std::find_if(move_tree.begin(), move_tree.end(), [&](s_tree_t *mt)
-                                           { 
-                                            auto move = mt->value->move;
-                                            return (int)move.target == square; });
-                    if (it != move_tree.end())
+                    if (selected != nullptr)
                     {
-                        auto move = it->value->move;
-                        game.makeMove(move);
-                        move_tree.clear();
-                        selected = no_sq;
-                        break;
+                        selected->target = square;
+                        selected->promotion = no_piece;
+                        game.makeMove(*selected);
+                        delete selected;
+                        selected = nullptr;
+                    }
+                    else if (game.getPiece(square, piece, side) && game.generateMoves(square).size() > 0)
+                    {
+                        selected = new move_t();
+                        selected->source = square;
+                        selected->piece = piece;
                     }
                 }
 
                 if (game.getPiece(square, piece, side))
                 {
                     pieces->Draw(draw_list, piece, min);
-
-                    if (pressed)
-                    {
-                        move_tree.clear();
-                        if (selected == square)
-                            selected = no_sq;
-                        else
-                        {
-                            game.generateMoves(move_tree, side, piece, square);
-                            selected = move_tree.children.size() > 0 ? square : no_sq;
-                        }
-                    }
-                }
-                else if (pressed)
-                {
-                    selected = no_sq;
-                    move_tree.clear();
                 }
             }
         }
 
-        if (selected != no_sq)
+        if (selected != nullptr)
         {
-            int row = selected / 8;
-            int col = selected % 8;
+            int row = selected->source / 8;
+            int col = selected->source % 8;
             ImVec2 min(pos.x + col * target_size.x, pos.y + row * target_size.y);
             ImVec2 max(pos.x + (col + 1) * target_size.x, pos.y + (row + 1) * target_size.y);
             // highlight border of square green
             draw_list->AddRect(min, max, IM_COL32(0, 255, 0, 255));
+
+            auto moves = game.generateMoves(selected->source);
+            for (auto &move : moves)
+            {
+                int row = move.target / 8;
+                int col = move.target % 8;
+                ImVec2 min(pos.x + col * target_size.x, pos.y + row * target_size.y);
+                ImVec2 max(pos.x + (col + 1) * target_size.x, pos.y + (row + 1) * target_size.y);
+                // add grey circle in the middle of the square
+                draw_list->AddCircleFilled(ImVec2((min.x + max.x) / 2, (min.y + max.y) / 2), target_size.x / 4, IM_COL32(128, 128, 128, 128));
+            }
         }
 
-        for (auto *mt : move_tree)
+        if (game.isCheckmated())
         {
-            auto move = mt->value->move;
-            int row = move.target / 8;
-            int col = move.target % 8;
-            ImVec2 min(pos.x + col * target_size.x, pos.y + row * target_size.y);
-            ImVec2 max(pos.x + (col + 1) * target_size.x, pos.y + (row + 1) * target_size.y);
-            // add grey circle in the middle of the square
-            draw_list->AddCircleFilled(ImVec2((min.x + max.x) / 2, (min.y + max.y) / 2), target_size.x / 4, IM_COL32(128, 128, 128, 128));
+            ui::OpenPopup("Checkmate");
         }
         ui::End();
     }
@@ -279,19 +186,9 @@ public:
 
 int main(int argc, char **argv)
 {
-    auto g = game_t::FromStartingPosition();
-    s_tree_t moves;
-    g.generateMoves(moves, e2);
-
-    for (auto *mt : moves)
-    {
-        auto m = mt->value;
-        std::cout << m->move.target << std::endl;
-    }
-
     // const char *f = argc > 1 ? argv[1] : "Vienna.pgn";
     // std::string filename = "assets/pgns/" + std::string(f);
 
-    // ChessBoard board(1200, 780, "Test", filename);
-    // board.Show();
+    ChessBoard board(1200, 780, "Test");
+    board.Show();
 }

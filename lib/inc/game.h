@@ -16,8 +16,6 @@ typedef struct sample_s sample_t;
 
 #ifdef __cplusplus
 
-typedef NodeTree<sample_t> s_tree_t;
-
 class game_t
 {
 public:
@@ -36,14 +34,14 @@ public:
     static game_t FromStartingPosition();
 
     uint8_t isAttacked(int square, int side) const;
+    bool isInCheck() const;
+    bool isCheckmated() const;
     bool getPiece(int square, int &piece, int &side) const;
     bool generatePseudoMoves(std::vector<move_t> &moves, int side, int piece, int square) const;
     bool generatePseudoMoves(std::vector<move_t> &moves, int square) const;
-    bool simulateMove(const move_t &move, s_tree_t &mt) const;
-    bool simulateMove(const move_t &move) const;
-    bool validateMove(move_t &move, s_tree_t &move_tree) const;
-    bool generateMoves(s_tree_t &moves, int side, int piece, int square) const;
-    bool generateMoves(s_tree_t &moves, int square) const;
+    bool simulateMove(const move_t move, game_t *game) const;
+    std::vector<move_t> generateMoves(int side, int piece, int square) const;
+    std::vector<move_t> generateMoves(int square) const;
     u64 generateHashKey() const;
     void printAttackedSquares(int side) const;
     std::string toFEN() const;
@@ -63,10 +61,6 @@ public:
     u64 hash;
     uint8_t half_move_clock;
     uint8_t full_move_number;
-    s_tree_t *move_tree;
-private:
-    bool simulateMove(const move_t &move, game_t &game) const;
-
 };
 
 #else

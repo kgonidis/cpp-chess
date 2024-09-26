@@ -6,7 +6,7 @@ add_library(chessengine SHARED
     src/constants.c
     src/movement.cpp
     src/keys.c
-    src/parser.cpp
+    # src/parser.cpp
     gm/EnhancedPGNParser.cpp
     gm/EnhancedPGNLexer.cpp
 )

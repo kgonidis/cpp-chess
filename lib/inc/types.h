@@ -114,6 +114,7 @@ typedef u64 Bitboard;
 typedef struct
 {
     Bitboard pieces[12];
+    Bitboard occupancies[3];
     uint8_t castling;
     uint8_t enpassant;
     uint8_t side;

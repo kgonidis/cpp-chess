@@ -20,26 +20,17 @@ template <typename T>
 class NodeTree
 {
 public:
-    T *value;
+    using ptr_t = std::shared_ptr<T>;
+    using ptr_nt = std::shared_ptr<NodeTree<T>>;
+    ptr_t value;
     NodeTree<T> *parent;
-    NodeTree<T> *main;
-    NodeTree<T> *next;
-    std::vector<NodeTree<T> *> children;
+    ptr_nt main;
+    ptr_nt next;
+    std::vector<ptr_nt> children;
 
     NodeTree() : value(nullptr), parent(nullptr), next(nullptr) {}
-    void operator delete(void *ptr)
-    {
-        // delete value
-        if (((NodeTree<T> *)ptr)->value != nullptr)
-            delete ((NodeTree<T> *)ptr)->value;
-
-        // delete children
-        for (auto &child : ((NodeTree<T> *)ptr)->children)
-            if (child != nullptr)
-                delete child;
-    };
     NodeTree(const T &m) : value(new T(m)), parent(nullptr), next(nullptr) {}
-    NodeTree(const T &m, NodeTree *p) : NodeTree(m) { parent = p; }
+    NodeTree(const T &m, NodeTree<T> *p) : NodeTree(m) { parent = p; }
 
     class iterator
     {
@@ -61,7 +52,7 @@ public:
             if (index >= (int)mt->children.size())
             {
                 index = 0;
-                mt = mt->main;
+                mt = mt->main.get();
                 if (mt == nullptr || mt->children.size() == 0)
                 {
                     mt = nullptr;
@@ -88,16 +79,18 @@ public:
             return !(rhs == *this);
         }
 
-        NodeTree<T> *operator*() const
+        NodeTree<T> operator*() const
         {
             if (index > -1 && index < (int)mt->children.size())
-                return mt->children[index];
-            return mt;
+                return *mt->children[index].get();
+            return *mt;
         }
 
         NodeTree<T> *operator->() const
         {
-            return **this;
+            if (index > -1 && index < (int)mt->children.size())
+                return mt->children[index].get();
+            return mt;
         }
     };
 
@@ -120,21 +113,21 @@ public:
         return *value == *mt.value;
     };
 
-    NodeTree<T> *AddChild(const T &m)
+    ptr_nt AddChild(const T &m)
     {
-        auto *mt = new NodeTree<T>(m, this);
-        children.push_back(mt);
+        auto mt = std::make_shared<NodeTree<T>>(m, this);
+        children.emplace_back(mt);
         if (next == nullptr)
             next = mt;
         if (main == nullptr)
             main = mt;
-        return mt;
+        return children.back();
     };
 
-    NodeTree<T> *AddChild(NodeTree<T> *mt)
+    ptr_nt AddChild(ptr_nt mt)
     {
         mt->parent = this;
-        children.push_back(mt);
+        children.emplace_back(mt);
         if (next == nullptr)
             next = mt;
         if (main == nullptr)
@@ -142,9 +135,9 @@ public:
         return mt;
     };
 
-    NodeTree<T> *AddChild(NodeTree<T> &mt)
+    ptr_nt AddChild(NodeTree<T> &mt)
     {
-        return AddChild(new NodeTree<T>(mt));
+        return AddChild(std::make_shared<NodeTree<T>>(mt));
     }
 
     void clear()

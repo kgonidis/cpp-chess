@@ -14,8 +14,7 @@ game_t::game_t()
       side(WHITE),
       hash(0),
       half_move_clock(0),
-      full_move_number(0),
-      move_tree(nullptr)
+      full_move_number(0)
 {
     for (int i = 0; i < 12; i++)
     {
@@ -44,84 +43,6 @@ game_t::game_t(const game_state_t &state)
     occupancies[BLACK] = state.pieces[p] | state.pieces[n] | state.pieces[b] | state.pieces[r] | state.pieces[q] | state.pieces[k];
     occupancies[BOTH] = occupancies[WHITE] | occupancies[BLACK];
 }
-
-// game_t::game_t(const game_t &g)
-//     : castling{g.castling},
-//       enpassant{g.enpassant},
-//       side{g.side},
-//       hash{g.hash},
-//       half_move_clock{g.half_move_clock},
-//       full_move_number{g.full_move_number}
-// {
-//     for (int i = 0; i < 12; i++)
-//     {
-//         pieces[i] = g.pieces[i];
-//     }
-//     for (int i = 0; i < 3; i++)
-//     {
-//         occupancies[i] = g.occupancies[i];
-//     }
-// }
-
-// game_t &game_t::operator=(const game_t &g)
-// {
-//     castling = g.castling;
-//     enpassant = g.enpassant;
-//     side = g.side;
-//     hash = g.hash;
-//     half_move_clock = g.half_move_clock;
-//     full_move_number = g.full_move_number;
-
-//     for (int i = 0; i < 12; i++)
-//     {
-//         pieces[i] = g.pieces[i];
-//     }
-//     for (int i = 0; i < 3; i++)
-//     {
-//         occupancies[i] = g.occupancies[i];
-//     }
-
-//     return *this;
-// }
-
-// game_t::game_t(game_t &&g)
-//     : castling{g.castling},
-//       enpassant{g.enpassant},
-//       side{g.side},
-//       hash{g.hash},
-//       half_move_clock{g.half_move_clock},
-//       full_move_number{g.full_move_number}
-// {
-//     for (int i = 0; i < 12; i++)
-//     {
-//         pieces[i] = g.pieces[i];
-//     }
-//     for (int i = 0; i < 3; i++)
-//     {
-//         occupancies[i] = g.occupancies[i];
-//     }
-// }
-
-// game_t &game_t::operator=(game_t &&g)
-// {
-//     castling = g.castling;
-//     enpassant = g.enpassant;
-//     side = g.side;
-//     hash = g.hash;
-//     half_move_clock = g.half_move_clock;
-//     full_move_number = g.full_move_number;
-
-//     for (int i = 0; i < 12; i++)
-//     {
-//         pieces[i] = g.pieces[i];
-//     }
-//     for (int i = 0; i < 3; i++)
-//     {
-//         occupancies[i] = g.occupancies[i];
-//     }
-
-//     return *this;
-// }
 
 game_t game_t::FromFEN(const char *fen)
 {
@@ -203,10 +124,6 @@ game_t game_t::FromFEN(const char *fen)
     g.occupancies[BOTH] = g.occupancies[WHITE] | g.occupancies[BLACK];
 
     g.hash = g.generateHashKey();
-    g.move_tree = new s_tree_t({.move = move_t{
-                                    .piece = (uint8_t)no_piece,
-                                },
-                                .game = g});
 
     return g;
 }
@@ -265,6 +182,32 @@ uint8_t game_t::isAttacked(int square, int side) const
     if (board & queens)
         return 1;
     return 0;
+}
+
+bool game_t::isInCheck() const
+{
+    int king_square = (side == WHITE) ? pieces[K].ls1b() : pieces[k].ls1b();
+    return isAttacked(king_square, 1 - side);
+}
+
+bool game_t::isCheckmated() const
+{
+    if (!isInCheck())
+        return false;
+    int start = (side == WHITE) ? P : p;
+    int end = (side == WHITE) ? K : k;
+    for (int piece = start; piece <= end; piece++)
+    {
+        Bitboard bb = pieces[piece];
+        int square = bb.popls1b();
+        while (square != -1)
+        {
+            if (generateMoves(side, piece, square).size() > 0)
+                return false;
+            square = bb.popls1b();
+        }
+    }
+    return true;
 }
 
 bool game_t::getPiece(int square, int &piece, int &side) const
@@ -546,37 +489,10 @@ bool game_t::generatePseudoMoves(std::vector<move_t> &moves, int square) const
     return generatePseudoMoves(moves, side, piece, square);
 }
 
-bool game_t::simulateMove(const move_t &move, s_tree_t &mt) const
-{
-    game_t g;
-    if (!simulateMove(move, g))
-        return false;
-
-    mt = s_tree_t({.move = move,
-                   .game = g},
-                  move_tree);
-    return true;
-}
-
-bool game_t::simulateMove(const move_t &move) const
-{
-    game_t g;
-    return simulateMove(move, g);
-}
-
 bool game_t::makeMove(move_t &move, bool validate)
 {
     if (!validate)
-        return simulateMove(move, *this);
-    s_tree_t tree;
-    if (!validateMove(move, tree))
-        return false;
-    move_tree = move_tree->AddChild(tree); 
-    return true;
-}
-
-bool game_t::validateMove(move_t &move, s_tree_t &move_tree) const
-{
+        return simulateMove(move, this);
     std::vector<move_t> moves;
     bool pseudo = (move.piece >= no_piece) ? generatePseudoMoves(moves, move.source) : generatePseudoMoves(moves, side, move.piece, move.source);
     if (!pseudo)
@@ -588,54 +504,37 @@ bool game_t::validateMove(move_t &move, s_tree_t &move_tree) const
 
     if (it == moves.end())
         return false;
-
-    if (!simulateMove(*it, move_tree))
-        return false;
-
     move = *it;
-    return true;
+    return simulateMove(move, this);
 }
 
-bool game_t::generateMoves(s_tree_t &moves, int side, int piece, int square) const
+std::vector<move_t> game_t::generateMoves(int side, int piece, int square) const
 {
+    std::vector<move_t> moves;
     if (this->side != side)
-        return false;
+        return moves;
     std::vector<move_t> pseudo_moves;
     if (!generatePseudoMoves(pseudo_moves, side, piece, square))
-        return false;
+        return moves;
 
     for (auto &move : pseudo_moves)
     {
         game_t g;
-        if (simulateMove(move, g))
+        if (simulateMove(move, &g))
         {
-            moves.AddChild(sample_t{
-                .move = move,
-                .game = g,
-            });
+            moves.push_back(move);
         }
     }
 
-    return false;
+    return moves;
 }
 
-bool game_t::generateMoves(s_tree_t &moves, int square) const
+std::vector<move_t> game_t::generateMoves(int square) const
 {
-    std::vector<move_t> pseudo_moves;
-    if (!generatePseudoMoves(pseudo_moves, square))
-        return false;
-    for (auto &move : pseudo_moves)
-    {
-        game_t g;
-        if (simulateMove(move, g))
-        {
-            moves.AddChild(sample_t{
-                .move = move,
-                .game = g,
-            });
-        }
-    }
-    return false;
+    int piece, side;
+    if (!getPiece(square, piece, side))
+        return std::vector<move_t>();
+    return generateMoves(side, piece, square);
 }
 
 void game_t::printAttackedSquares(int side) const
@@ -803,7 +702,7 @@ bool game_t::operator==(const game_t &g) const
     return true;
 }
 
-bool game_t::simulateMove(const move_t &move, game_t &game) const
+bool game_t::simulateMove(const move_t move, game_t *game) const
 {
     // copy game
     game_t g = *this;
@@ -911,6 +810,7 @@ bool game_t::simulateMove(const move_t &move, game_t &game) const
     const int king = (side == WHITE) ? K : k;
     if (g.isAttacked(g.pieces[king].ls1b(), g.side))
         return false;
+    *game = g;
     return true;
 }
 
