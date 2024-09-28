@@ -1,7 +1,6 @@
 #include "game.h"
 #include "constants.h"
 #include "attacks.h"
-#include "keys.h"
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -249,16 +248,6 @@ std::string game_t::ToPGN(movetree_t *moves)
         moves = children.size() ? children[0] : nullptr;
     }
     return san;
-}
-
-void game_t::addPiece(int square, int piece)
-{
-    state.pieces[piece].set(square);
-    for (int side = WHITE; side <= BOTH; side++)
-    {
-        state.occupancies[side].set(square);
-    }
-    state.hash = generateHashKey();
 }
 
 uint8_t game_t::isAttacked(int square, int side) const
@@ -985,12 +974,13 @@ void bitboard_print(Bitboard board)
     printf("  a b c d e f g h\n\n");
 }
 
-void game_new(game_t *game)
+void game_new(game_state_t *game)
 {
-    *game = game_t::FromStartingPosition();
+    *game = game_t::FromStartingPosition().getState();
 }
 
-void game_print(game_t *game)
+void game_print(const game_state_t game)
 {
-    std::cout << *game;
+    game_t g(game);
+    std::cout << g;
 }

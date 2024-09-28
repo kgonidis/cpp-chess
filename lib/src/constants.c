@@ -181,3 +181,5 @@ const int CASTLE_RIGHTS[64] = {
     15, 15, 15, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15,
     13, 15, 15, 15, 12, 15, 15, 14};
+
+hash_keys_t HASH_KEYS = {.initialized = 0};

@@ -24,7 +24,12 @@ public:
     movetree_t *addChild(const move_node_t &data);
 };
 #else
-typedef struct movetree_s movetree_t;
+typedef struct movetree_s{
+    move_node_t data;
+    struct movetree_s *parent;
+    struct movetree_s **children;
+    long tab_level;
+} movetree_t;
 #endif // __cplusplus
 
 #endif // MOVE_TREE_H

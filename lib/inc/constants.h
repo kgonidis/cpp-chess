@@ -23,6 +23,7 @@ extern u64 PIECE_KEYS[12][64];
 extern u64 ENPASSANT_KEYS[64];
 extern u64 CASTLE_KEYS[16];
 extern u64 SIDE_KEY;
+extern hash_keys_t HASH_KEYS;
 
 extern const int CASTLE_RIGHTS[64];
 

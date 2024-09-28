@@ -220,6 +220,26 @@ typedef struct
     move_t move;
 } move_node_t;
 
+typedef struct attack_boards_s
+{
+    Bitboard pawn[2][64];
+    Bitboard knight[64];
+    Bitboard king[64];
+    Bitboard bishop[64][512];
+    Bitboard rook[64][4096];
+    Bitboard masks[2][64];
+    uint8_t initialized;
+} attack_boards_t;
+
+typedef struct hash_keys_s
+{
+    u64 piece[12][64];
+    u64 enpassant[64];
+    u64 castle[16];
+    u64 side;
+    uint8_t initialized;
+} hash_keys_t;
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -231,19 +251,11 @@ extern "C"
     int bitboard_ls1b(const Bitboard *b);
     int bitboard_popls1b(Bitboard *b);
     void move_to_san(const move_t move, char *san);
+    void hash_keys_init();
 
 #ifdef __cplusplus
 }
 #endif
 
-typedef struct attack_boards_s
-{
-    Bitboard pawn[2][64];
-    Bitboard knight[64];
-    Bitboard king[64];
-    Bitboard bishop[64][512];
-    Bitboard rook[64][4096];
-    Bitboard masks[2][64];
-    uint8_t initialized;
-} attack_boards_t;
+
 #endif // TYPES_H

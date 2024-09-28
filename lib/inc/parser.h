@@ -30,8 +30,6 @@ extern "C"
 #endif
 
     void pgn_parse(pgn_db_t *db, const char *filename);
-    movetree_t *pgn_moves(pgn_db_t *db, int index);
-    void free_pgn_db(pgn_db_t *db);
     void print_pgn_db(pgn_db_t *db);
 
 #ifdef __cplusplus

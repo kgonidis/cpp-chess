@@ -201,6 +201,6 @@ int main(int argc, char **argv)
 
 
 
-    // ChessBoard board(1200, 780, "Test");
-    // board.Show();
+    ChessBoard board(1200, 780, "Test");
+    board.Show();
 }

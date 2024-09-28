@@ -7,14 +7,6 @@
 #ifdef __cplusplus
 #include <string>
 #include <vector>
-class game_t;
-#else
-typedef struct game_s game_t;
-#endif
-
-typedef struct sample_s sample_t;
-
-#ifdef __cplusplus
 
 class game_t
 {
@@ -40,30 +32,12 @@ public:
     std::string toFEN() const;
     game_state_t getState() const;
 
-    void addPiece(int square, int piece);
     bool makeMove(move_t &move, bool validate = true);
 
     bool operator==(const game_t &g) const;
     friend std::ostream &operator<<(std::ostream &os, const game_t &g);
 
     game_state_t state;
-};
-
-#else
-
-typedef void s_tree_t;
-
-struct game_s
-{
-    Bitboard pieces[12];
-    Bitboard occupancies[3];
-    uint8_t castling;
-    uint8_t enpassant;
-    uint8_t side;
-    u64 hash;
-    uint8_t half_move_clock;
-    uint8_t full_move_number;
-    s_tree_t *move_tree;
 };
 
 #endif
@@ -74,14 +48,9 @@ extern const char *STARTING_FEN;
 extern "C"
 {
 #endif
-    struct sample_s
-    {
-        move_t move;
-        game_t game;
-    };
-    void bitboard_print(Bitboard board);
-    void game_new(game_t *game);
-    void game_print(game_t *game);
+    
+void game_new(game_state_t *state);
+void game_print(const game_state_t state);
 
 #ifdef __cplusplus
 }
