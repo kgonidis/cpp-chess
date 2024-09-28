@@ -3,7 +3,6 @@
 
 
 #include "EnhancedPGNParserListener.h"
-#include "EnhancedPGNParserVisitor.h"
 
 #include "EnhancedPGNParser.h"
 
@@ -67,8 +66,8 @@ void enhancedpgnparserParserInitialize() {
       "", "'['", "", "", "", "", "", "", "", "' '", "';'", "", "'{'", "", 
       "", "", "'='", "", "", "'O-O'", "'O-O-O'", "'x'", "'('", "')'", "'\\u003F\\u003F'", 
       "'\\u003F'", "'\\u003F!'", "'!\\u003F'", "'!'", "'!!'", "'+'", "'#'", 
-      "'1-0'", "'0-1'", "'1/2-1/2'", "'*'", "", "", "", "'[%'", "'}'", "", 
-      "", "", "','"
+      "'1-0'", "'0-1'", "'1/2-1/2'", "'*'", "", "", "'\\n'", "'[%'", "'}'", 
+      "", "", "", "','"
     },
     std::vector<std::string>{
       "", "TAG_START", "STRING", "MOVE_TEXT_START", "MOVE_TEXT_START_WITH_COMMENT", 
@@ -300,14 +299,6 @@ void EnhancedPGNParser::ParseContext::exitRule(tree::ParseTreeListener *listener
     parserListener->exitParse(this);
 }
 
-
-std::any EnhancedPGNParser::ParseContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitParse(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::ParseContext* EnhancedPGNParser::parse() {
   ParseContext *_localctx = _tracker.createInstance<ParseContext>(_ctx, getState());
   enterRule(_localctx, 0, EnhancedPGNParser::RuleParse);
@@ -384,14 +375,6 @@ void EnhancedPGNParser::Pgn_databaseContext::exitRule(tree::ParseTreeListener *l
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitPgn_database(this);
-}
-
-
-std::any EnhancedPGNParser::Pgn_databaseContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitPgn_database(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::Pgn_databaseContext* EnhancedPGNParser::pgn_database() {
@@ -481,14 +464,6 @@ void EnhancedPGNParser::PgnContext::exitRule(tree::ParseTreeListener *listener) 
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitPgn(this);
-}
-
-
-std::any EnhancedPGNParser::PgnContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitPgn(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::PgnContext* EnhancedPGNParser::pgn() {
@@ -595,14 +570,6 @@ void EnhancedPGNParser::Tag_pairsContext::exitRule(tree::ParseTreeListener *list
     parserListener->exitTag_pairs(this);
 }
 
-
-std::any EnhancedPGNParser::Tag_pairsContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitTag_pairs(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::Tag_pairsContext* EnhancedPGNParser::tag_pairs() {
   Tag_pairsContext *_localctx = _tracker.createInstance<Tag_pairsContext>(_ctx, getState());
   enterRule(_localctx, 6, EnhancedPGNParser::RuleTag_pairs);
@@ -687,14 +654,6 @@ void EnhancedPGNParser::Tag_pairContext::exitRule(tree::ParseTreeListener *liste
     parserListener->exitTag_pair(this);
 }
 
-
-std::any EnhancedPGNParser::Tag_pairContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitTag_pair(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::Tag_pairContext* EnhancedPGNParser::tag_pair() {
   Tag_pairContext *_localctx = _tracker.createInstance<Tag_pairContext>(_ctx, getState());
   enterRule(_localctx, 8, EnhancedPGNParser::RuleTag_pair);
@@ -765,14 +724,6 @@ void EnhancedPGNParser::Tag_keyContext::exitRule(tree::ParseTreeListener *listen
     parserListener->exitTag_key(this);
 }
 
-
-std::any EnhancedPGNParser::Tag_keyContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitTag_key(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::Tag_keyContext* EnhancedPGNParser::tag_key() {
   Tag_keyContext *_localctx = _tracker.createInstance<Tag_keyContext>(_ctx, getState());
   enterRule(_localctx, 10, EnhancedPGNParser::RuleTag_key);
@@ -824,14 +775,6 @@ void EnhancedPGNParser::Tag_valueContext::exitRule(tree::ParseTreeListener *list
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitTag_value(this);
-}
-
-
-std::any EnhancedPGNParser::Tag_valueContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitTag_value(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::Tag_valueContext* EnhancedPGNParser::tag_value() {
@@ -901,14 +844,6 @@ void EnhancedPGNParser::Move_textContext::exitRule(tree::ParseTreeListener *list
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitMove_text(this);
-}
-
-
-std::any EnhancedPGNParser::Move_textContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitMove_text(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::Move_textContext* EnhancedPGNParser::move_text() {
@@ -999,14 +934,6 @@ void EnhancedPGNParser::Game_terminationContext::exitRule(tree::ParseTreeListene
     parserListener->exitGame_termination(this);
 }
 
-
-std::any EnhancedPGNParser::Game_terminationContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitGame_termination(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::Game_terminationContext* EnhancedPGNParser::game_termination() {
   Game_terminationContext *_localctx = _tracker.createInstance<Game_terminationContext>(_ctx, getState());
   enterRule(_localctx, 16, EnhancedPGNParser::RuleGame_termination);
@@ -1091,14 +1018,6 @@ void EnhancedPGNParser::White_winsContext::exitRule(tree::ParseTreeListener *lis
     parserListener->exitWhite_wins(this);
 }
 
-
-std::any EnhancedPGNParser::White_winsContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitWhite_wins(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::White_winsContext* EnhancedPGNParser::white_wins() {
   White_winsContext *_localctx = _tracker.createInstance<White_winsContext>(_ctx, getState());
   enterRule(_localctx, 18, EnhancedPGNParser::RuleWhite_wins);
@@ -1150,14 +1069,6 @@ void EnhancedPGNParser::Black_winsContext::exitRule(tree::ParseTreeListener *lis
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitBlack_wins(this);
-}
-
-
-std::any EnhancedPGNParser::Black_winsContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitBlack_wins(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::Black_winsContext* EnhancedPGNParser::black_wins() {
@@ -1213,14 +1124,6 @@ void EnhancedPGNParser::DrawContext::exitRule(tree::ParseTreeListener *listener)
     parserListener->exitDraw(this);
 }
 
-
-std::any EnhancedPGNParser::DrawContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitDraw(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::DrawContext* EnhancedPGNParser::draw() {
   DrawContext *_localctx = _tracker.createInstance<DrawContext>(_ctx, getState());
   enterRule(_localctx, 22, EnhancedPGNParser::RuleDraw);
@@ -1272,14 +1175,6 @@ void EnhancedPGNParser::Unknown_endingContext::exitRule(tree::ParseTreeListener 
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitUnknown_ending(this);
-}
-
-
-std::any EnhancedPGNParser::Unknown_endingContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitUnknown_ending(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::Unknown_endingContext* EnhancedPGNParser::unknown_ending() {
@@ -1337,14 +1232,6 @@ void EnhancedPGNParser::Move_text_itemContext::exitRule(tree::ParseTreeListener 
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitMove_text_item(this);
-}
-
-
-std::any EnhancedPGNParser::Move_text_itemContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitMove_text_item(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::Move_text_itemContext* EnhancedPGNParser::move_text_item() {
@@ -1421,14 +1308,6 @@ void EnhancedPGNParser::Turn_itemContext::exitRule(tree::ParseTreeListener *list
     parserListener->exitTurn_item(this);
 }
 
-
-std::any EnhancedPGNParser::Turn_itemContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitTurn_item(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::Turn_itemContext* EnhancedPGNParser::turn_item() {
   Turn_itemContext *_localctx = _tracker.createInstance<Turn_itemContext>(_ctx, getState());
   enterRule(_localctx, 28, EnhancedPGNParser::RuleTurn_item);
@@ -1501,14 +1380,6 @@ void EnhancedPGNParser::NagContext::exitRule(tree::ParseTreeListener *listener) 
     parserListener->exitNag(this);
 }
 
-
-std::any EnhancedPGNParser::NagContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitNag(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::NagContext* EnhancedPGNParser::nag() {
   NagContext *_localctx = _tracker.createInstance<NagContext>(_ctx, getState());
   enterRule(_localctx, 30, EnhancedPGNParser::RuleNag);
@@ -1564,14 +1435,6 @@ void EnhancedPGNParser::CommentContext::exitRule(tree::ParseTreeListener *listen
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitComment(this);
-}
-
-
-std::any EnhancedPGNParser::CommentContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitComment(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::CommentContext* EnhancedPGNParser::comment() {
@@ -1653,14 +1516,6 @@ void EnhancedPGNParser::Eol_commentContext::exitRule(tree::ParseTreeListener *li
     parserListener->exitEol_comment(this);
 }
 
-
-std::any EnhancedPGNParser::Eol_commentContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitEol_comment(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::Eol_commentContext* EnhancedPGNParser::eol_comment() {
   Eol_commentContext *_localctx = _tracker.createInstance<Eol_commentContext>(_ctx, getState());
   enterRule(_localctx, 34, EnhancedPGNParser::RuleEol_comment);
@@ -1716,14 +1571,6 @@ void EnhancedPGNParser::Eol_comment_bodyContext::exitRule(tree::ParseTreeListene
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitEol_comment_body(this);
-}
-
-
-std::any EnhancedPGNParser::Eol_comment_bodyContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitEol_comment_body(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::Eol_comment_bodyContext* EnhancedPGNParser::eol_comment_body() {
@@ -1801,14 +1648,6 @@ void EnhancedPGNParser::TurnContext::exitRule(tree::ParseTreeListener *listener)
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitTurn(this);
-}
-
-
-std::any EnhancedPGNParser::TurnContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitTurn(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::TurnContext* EnhancedPGNParser::turn() {
@@ -1986,14 +1825,6 @@ void EnhancedPGNParser::Alternate_lineContext::exitRule(tree::ParseTreeListener 
     parserListener->exitAlternate_line(this);
 }
 
-
-std::any EnhancedPGNParser::Alternate_lineContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitAlternate_line(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::Alternate_lineContext* EnhancedPGNParser::alternate_line(int number) {
   Alternate_lineContext *_localctx = _tracker.createInstance<Alternate_lineContext>(_ctx, getState(), number);
   enterRule(_localctx, 40, EnhancedPGNParser::RuleAlternate_line);
@@ -2063,14 +1894,6 @@ void EnhancedPGNParser::Move_numContext::exitRule(tree::ParseTreeListener *liste
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitMove_num(this);
-}
-
-
-std::any EnhancedPGNParser::Move_numContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitMove_num(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::Move_numContext* EnhancedPGNParser::move_num() {
@@ -2159,14 +1982,6 @@ void EnhancedPGNParser::SanContext::exitRule(tree::ParseTreeListener *listener) 
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitSan(this);
-}
-
-
-std::any EnhancedPGNParser::SanContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitSan(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::SanContext* EnhancedPGNParser::san(int number) {
@@ -2338,14 +2153,6 @@ void EnhancedPGNParser::Check_likeContext::exitRule(tree::ParseTreeListener *lis
     parserListener->exitCheck_like(this);
 }
 
-
-std::any EnhancedPGNParser::Check_likeContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitCheck_like(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::Check_likeContext* EnhancedPGNParser::check_like() {
   Check_likeContext *_localctx = _tracker.createInstance<Check_likeContext>(_ctx, getState());
   enterRule(_localctx, 46, EnhancedPGNParser::RuleCheck_like);
@@ -2423,14 +2230,6 @@ void EnhancedPGNParser::CheckContext::exitRule(tree::ParseTreeListener *listener
     parserListener->exitCheck(this);
 }
 
-
-std::any EnhancedPGNParser::CheckContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitCheck(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::CheckContext* EnhancedPGNParser::check() {
   CheckContext *_localctx = _tracker.createInstance<CheckContext>(_ctx, getState());
   enterRule(_localctx, 48, EnhancedPGNParser::RuleCheck);
@@ -2488,14 +2287,6 @@ void EnhancedPGNParser::Double_checkContext::exitRule(tree::ParseTreeListener *l
     parserListener->exitDouble_check(this);
 }
 
-
-std::any EnhancedPGNParser::Double_checkContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitDouble_check(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::Double_checkContext* EnhancedPGNParser::double_check() {
   Double_checkContext *_localctx = _tracker.createInstance<Double_checkContext>(_ctx, getState());
   enterRule(_localctx, 50, EnhancedPGNParser::RuleDouble_check);
@@ -2549,14 +2340,6 @@ void EnhancedPGNParser::CheckmateContext::exitRule(tree::ParseTreeListener *list
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitCheckmate(this);
-}
-
-
-std::any EnhancedPGNParser::CheckmateContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitCheckmate(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::CheckmateContext* EnhancedPGNParser::checkmate() {
@@ -2630,14 +2413,6 @@ void EnhancedPGNParser::Move_analysisContext::exitRule(tree::ParseTreeListener *
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitMove_analysis(this);
-}
-
-
-std::any EnhancedPGNParser::Move_analysisContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitMove_analysis(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::Move_analysisContext* EnhancedPGNParser::move_analysis() {
@@ -2738,14 +2513,6 @@ void EnhancedPGNParser::BlunderContext::exitRule(tree::ParseTreeListener *listen
     parserListener->exitBlunder(this);
 }
 
-
-std::any EnhancedPGNParser::BlunderContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitBlunder(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::BlunderContext* EnhancedPGNParser::blunder() {
   BlunderContext *_localctx = _tracker.createInstance<BlunderContext>(_ctx, getState());
   enterRule(_localctx, 56, EnhancedPGNParser::RuleBlunder);
@@ -2797,14 +2564,6 @@ void EnhancedPGNParser::MistakeContext::exitRule(tree::ParseTreeListener *listen
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitMistake(this);
-}
-
-
-std::any EnhancedPGNParser::MistakeContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitMistake(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::MistakeContext* EnhancedPGNParser::mistake() {
@@ -2860,14 +2619,6 @@ void EnhancedPGNParser::Dubious_moveContext::exitRule(tree::ParseTreeListener *l
     parserListener->exitDubious_move(this);
 }
 
-
-std::any EnhancedPGNParser::Dubious_moveContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitDubious_move(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::Dubious_moveContext* EnhancedPGNParser::dubious_move() {
   Dubious_moveContext *_localctx = _tracker.createInstance<Dubious_moveContext>(_ctx, getState());
   enterRule(_localctx, 60, EnhancedPGNParser::RuleDubious_move);
@@ -2919,14 +2670,6 @@ void EnhancedPGNParser::Interesting_moveContext::exitRule(tree::ParseTreeListene
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitInteresting_move(this);
-}
-
-
-std::any EnhancedPGNParser::Interesting_moveContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitInteresting_move(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::Interesting_moveContext* EnhancedPGNParser::interesting_move() {
@@ -2982,14 +2725,6 @@ void EnhancedPGNParser::Good_moveContext::exitRule(tree::ParseTreeListener *list
     parserListener->exitGood_move(this);
 }
 
-
-std::any EnhancedPGNParser::Good_moveContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitGood_move(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::Good_moveContext* EnhancedPGNParser::good_move() {
   Good_moveContext *_localctx = _tracker.createInstance<Good_moveContext>(_ctx, getState());
   enterRule(_localctx, 64, EnhancedPGNParser::RuleGood_move);
@@ -3041,14 +2776,6 @@ void EnhancedPGNParser::Brilliant_moveContext::exitRule(tree::ParseTreeListener 
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitBrilliant_move(this);
-}
-
-
-std::any EnhancedPGNParser::Brilliant_moveContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitBrilliant_move(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::Brilliant_moveContext* EnhancedPGNParser::brilliant_move() {
@@ -3106,14 +2833,6 @@ void EnhancedPGNParser::CaptureContext::exitRule(tree::ParseTreeListener *listen
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitCapture(this);
-}
-
-
-std::any EnhancedPGNParser::CaptureContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitCapture(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::CaptureContext* EnhancedPGNParser::capture() {
@@ -3202,14 +2921,6 @@ void EnhancedPGNParser::Pawn_captureContext::exitRule(tree::ParseTreeListener *l
     parserListener->exitPawn_capture(this);
 }
 
-
-std::any EnhancedPGNParser::Pawn_captureContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitPawn_capture(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::Pawn_captureContext* EnhancedPGNParser::pawn_capture() {
   Pawn_captureContext *_localctx = _tracker.createInstance<Pawn_captureContext>(_ctx, getState());
   enterRule(_localctx, 70, EnhancedPGNParser::RulePawn_capture);
@@ -3294,14 +3005,6 @@ void EnhancedPGNParser::Piece_captureContext::exitRule(tree::ParseTreeListener *
     parserListener->exitPiece_capture(this);
 }
 
-
-std::any EnhancedPGNParser::Piece_captureContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitPiece_capture(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::Piece_captureContext* EnhancedPGNParser::piece_capture() {
   Piece_captureContext *_localctx = _tracker.createInstance<Piece_captureContext>(_ctx, getState());
   enterRule(_localctx, 72, EnhancedPGNParser::RulePiece_capture);
@@ -3384,14 +3087,6 @@ void EnhancedPGNParser::Pawn_moveContext::exitRule(tree::ParseTreeListener *list
     parserListener->exitPawn_move(this);
 }
 
-
-std::any EnhancedPGNParser::Pawn_moveContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitPawn_move(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::Pawn_moveContext* EnhancedPGNParser::pawn_move() {
   Pawn_moveContext *_localctx = _tracker.createInstance<Pawn_moveContext>(_ctx, getState());
   enterRule(_localctx, 74, EnhancedPGNParser::RulePawn_move);
@@ -3464,14 +3159,6 @@ void EnhancedPGNParser::PromotionContext::exitRule(tree::ParseTreeListener *list
     parserListener->exitPromotion(this);
 }
 
-
-std::any EnhancedPGNParser::PromotionContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitPromotion(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::PromotionContext* EnhancedPGNParser::promotion() {
   PromotionContext *_localctx = _tracker.createInstance<PromotionContext>(_ctx, getState());
   enterRule(_localctx, 76, EnhancedPGNParser::RulePromotion);
@@ -3527,14 +3214,6 @@ void EnhancedPGNParser::PieceContext::exitRule(tree::ParseTreeListener *listener
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitPiece(this);
-}
-
-
-std::any EnhancedPGNParser::PieceContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitPiece(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::PieceContext* EnhancedPGNParser::piece() {
@@ -3600,14 +3279,6 @@ void EnhancedPGNParser::Piece_moveContext::exitRule(tree::ParseTreeListener *lis
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitPiece_move(this);
-}
-
-
-std::any EnhancedPGNParser::Piece_moveContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitPiece_move(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::Piece_moveContext* EnhancedPGNParser::piece_move() {
@@ -3686,14 +3357,6 @@ void EnhancedPGNParser::CastleContext::exitRule(tree::ParseTreeListener *listene
     parserListener->exitCastle(this);
 }
 
-
-std::any EnhancedPGNParser::CastleContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitCastle(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::CastleContext* EnhancedPGNParser::castle() {
   CastleContext *_localctx = _tracker.createInstance<CastleContext>(_ctx, getState());
   enterRule(_localctx, 82, EnhancedPGNParser::RuleCastle);
@@ -3767,14 +3430,6 @@ void EnhancedPGNParser::Block_commentContext::exitRule(tree::ParseTreeListener *
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitBlock_comment(this);
-}
-
-
-std::any EnhancedPGNParser::Block_commentContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitBlock_comment(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::Block_commentContext* EnhancedPGNParser::block_comment() {
@@ -3854,14 +3509,6 @@ void EnhancedPGNParser::Block_comment_bodyContext::exitRule(tree::ParseTreeListe
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitBlock_comment_body(this);
-}
-
-
-std::any EnhancedPGNParser::Block_comment_bodyContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitBlock_comment_body(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::Block_comment_bodyContext* EnhancedPGNParser::block_comment_body() {
@@ -3947,14 +3594,6 @@ void EnhancedPGNParser::Block_comment_textContext::exitRule(tree::ParseTreeListe
     parserListener->exitBlock_comment_text(this);
 }
 
-
-std::any EnhancedPGNParser::Block_comment_textContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitBlock_comment_text(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::Block_comment_textContext* EnhancedPGNParser::block_comment_text() {
   Block_comment_textContext *_localctx = _tracker.createInstance<Block_comment_textContext>(_ctx, getState());
   enterRule(_localctx, 88, EnhancedPGNParser::RuleBlock_comment_text);
@@ -4020,14 +3659,6 @@ void EnhancedPGNParser::CommandContext::exitRule(tree::ParseTreeListener *listen
     parserListener->exitCommand(this);
 }
 
-
-std::any EnhancedPGNParser::CommandContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitCommand(this);
-  else
-    return visitor->visitChildren(this);
-}
-
 EnhancedPGNParser::CommandContext* EnhancedPGNParser::command() {
   CommandContext *_localctx = _tracker.createInstance<CommandContext>(_ctx, getState());
   enterRule(_localctx, 90, EnhancedPGNParser::RuleCommand);
@@ -4085,14 +3716,6 @@ void EnhancedPGNParser::Command_idContext::exitRule(tree::ParseTreeListener *lis
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitCommand_id(this);
-}
-
-
-std::any EnhancedPGNParser::Command_idContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitCommand_id(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::Command_idContext* EnhancedPGNParser::command_id() {
@@ -4158,14 +3781,6 @@ void EnhancedPGNParser::Command_paramsContext::exitRule(tree::ParseTreeListener 
   auto parserListener = dynamic_cast<EnhancedPGNParserListener *>(listener);
   if (parserListener != nullptr)
     parserListener->exitCommand_params(this);
-}
-
-
-std::any EnhancedPGNParser::Command_paramsContext::accept(tree::ParseTreeVisitor *visitor) {
-  if (auto parserVisitor = dynamic_cast<EnhancedPGNParserVisitor*>(visitor))
-    return parserVisitor->visitCommand_params(this);
-  else
-    return visitor->visitChildren(this);
 }
 
 EnhancedPGNParser::Command_paramsContext* EnhancedPGNParser::command_params() {

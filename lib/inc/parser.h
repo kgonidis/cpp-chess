@@ -3,17 +3,17 @@
 
 #include "game.h"
 #include "types.h"
-#include "movement.h"
+#include "movetree.h"
 
 typedef struct pair_s
 {
-    const char *key;
-    const char *value;
+    char *key;
+    char *value;
 } pair_t;
 
 typedef struct pgn_s
 {
-    move_tree_t *moves;
+    movetree_t *moves;
     pair_t *pairs;
     uint8_t n_pairs;
 } pgn_t;
@@ -30,8 +30,9 @@ extern "C"
 #endif
 
     void pgn_parse(pgn_db_t *db, const char *filename);
-    move_tree_t *pgn_moves(pgn_db_t *db, int index);
+    movetree_t *pgn_moves(pgn_db_t *db, int index);
     void free_pgn_db(pgn_db_t *db);
+    void print_pgn_db(pgn_db_t *db);
 
 #ifdef __cplusplus
 }

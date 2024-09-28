@@ -247,36 +247,42 @@ int bitboard_popls1b(Bitboard *b)
     return index;
 }
 
-void move_to_san(const move_t *san, char *san_str)
+void move_to_san(const move_t san, char *san_str)
 {
-    if (san->castling & e_castling::KCA)
+    if (san.castling & e_castling::KCA)
     {
         strcpy(san_str, "O-O");
         return;
     }
-    if (san->castling & e_castling::QCA)
+    if (san.castling & e_castling::QCA)
     {
         strcpy(san_str, "O-O-O");
         return;
     }
 
     int index = 0;
-    if (san->piece != e_piece::P && san->piece != e_piece::p)
+    if (san.piece != e_piece::P && san.piece != e_piece::p)
     {
-        *san_str = ASCII_PIECES[san->piece % 6];
+        *san_str = ASCII_PIECES[san.piece % 6];
         index++;
     }
 
-    if (san->capture != e_piece::no_piece)
+    if (san.capture != e_piece::no_piece)
     {
-        if (san->piece == e_piece::P || san->piece == e_piece::p)
-            san_str[index++] += (char)(san->source % 8 + 'a');
+        if (san.piece == e_piece::P || san.piece == e_piece::p)
+            san_str[index++] = (char)(san.source % 8 + 'a');
         san_str[index++] = 'x';
     }
 
-    strcpy(&san_str[index], CHAR_SQUARE_MAP[san->target]);
-    index += strlen(CHAR_SQUARE_MAP[san->target]);
+    strcpy(&san_str[index], CHAR_SQUARE_MAP[san.target]);
+    index += strlen(CHAR_SQUARE_MAP[san.target]);
 
-    if (san->promotion != e_piece::no_piece)
-        san_str[index] += ASCII_PIECES[san->promotion];
+    if (san.promotion != e_piece::no_piece)
+        san_str[index++] = ASCII_PIECES[san.promotion];
+
+    if (san.check)
+        san_str[index] = '+';
+
+    if (san.checkmate)
+        san_str[index] = '#';
 }

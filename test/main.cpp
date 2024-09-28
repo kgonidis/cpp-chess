@@ -186,9 +186,21 @@ public:
 
 int main(int argc, char **argv)
 {
-    // const char *f = argc > 1 ? argv[1] : "Vienna.pgn";
-    // std::string filename = "assets/pgns/" + std::string(f);
+    const char *f = argc > 1 ? argv[1] : "e4NYStyle.pgn";
+    std::string filename = "assets/pgns/" + std::string(f);
 
-    ChessBoard board(1200, 780, "Test");
-    board.Show();
+    pgn_db_t *db = new pgn_db_t();
+    pgn_parse(db, filename.c_str());
+
+    // std::cout << game_t::ToPGN(db->pgns[db->n_pgns-1].moves) << std::endl << std::endl;
+    for (int i = 0; i < db->n_pgns; i++)
+    {
+        auto pgn = db->pgns[i];
+        std::cout << game_t::ToPGN(pgn.moves) << std::endl << std::endl;
+    }
+
+
+
+    // ChessBoard board(1200, 780, "Test");
+    // board.Show();
 }

@@ -22,7 +22,7 @@ MOVE_TEXT_START_WITH_COMMENT
     ;
 
 NEW_LINE
-    : '\n'
+    : '\n' | '\r\n'
     ;
 
 mode TAG_PAIRS;

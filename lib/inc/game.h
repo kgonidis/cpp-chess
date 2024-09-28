@@ -2,7 +2,7 @@
 #define GAME_H
 
 #include "types.h"
-#include "movement.h"
+#include "movetree.h"
 
 #ifdef __cplusplus
 #include <string>
@@ -21,17 +21,10 @@ class game_t
 public:
     game_t();
     game_t(const game_state_t &state);
-    // // copy constructor
-    // game_t(const game_t &g);
-    // // copy assignment
-    // game_t &operator=(const game_t &g);
-    // // move constructor
-    // game_t(game_t &&g);
-    // // move assignment
-    // game_t &operator=(game_t &&g);
 
     static game_t FromFEN(const char *fen);
     static game_t FromStartingPosition();
+    static std::string ToPGN(movetree_t *moves);
 
     uint8_t isAttacked(int square, int side) const;
     bool isInCheck() const;
@@ -39,7 +32,7 @@ public:
     bool getPiece(int square, int &piece, int &side) const;
     bool generatePseudoMoves(std::vector<move_t> &moves, int side, int piece, int square) const;
     bool generatePseudoMoves(std::vector<move_t> &moves, int square) const;
-    bool simulateMove(const move_t move, game_t *game) const;
+    bool simulateMove(move_t &move, game_t *game) const;
     std::vector<move_t> generateMoves(int side, int piece, int square) const;
     std::vector<move_t> generateMoves(int square) const;
     u64 generateHashKey() const;
@@ -53,14 +46,7 @@ public:
     bool operator==(const game_t &g) const;
     friend std::ostream &operator<<(std::ostream &os, const game_t &g);
 
-    Bitboard pieces[12];
-    Bitboard occupancies[3];
-    uint8_t castling;
-    uint8_t enpassant;
-    uint8_t side;
-    u64 hash;
-    uint8_t half_move_clock;
-    uint8_t full_move_number;
+    game_state_t state;
 };
 
 #else

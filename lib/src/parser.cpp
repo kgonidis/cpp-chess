@@ -6,9 +6,11 @@
 #include "EnhancedPGNLexer.h"
 #include <fstream>
 #include <sstream>
+#include <attacks.h>
 
-move_state_t parse_san(EnhancedPGNParser::SanContext *context, game_t &game)
+movetree_t *parse_san(EnhancedPGNParser::SanContext *context, movetree_t *movetree)
 {
+    game_t game(movetree->getData().state);
     auto location_to_index = [](std::string loc) -> int
     {
         int file = loc[0] - 'a';
@@ -16,14 +18,15 @@ move_state_t parse_san(EnhancedPGNParser::SanContext *context, game_t &game)
         return rank * 8 + file;
     };
 
-    auto add_move = [&game](move_t m)
+    auto add_move = [&game, &movetree](move_t m)
     {
         if (!game.makeMove(m))
             throw std::runtime_error("Invalid move");
-        return move_state_t{
+        move_node_t node = {
             .move = m,
-            .state = game.getState(),
-        };
+            .state = game.getState()};
+        auto *mt = movetree->addChild(node);
+        return mt;
     };
 
     auto get_file_rank_bitboard = [](int file, int rank) -> Bitboard
@@ -52,7 +55,7 @@ move_state_t parse_san(EnhancedPGNParser::SanContext *context, game_t &game)
 
     auto add_piece_move = [&](int piece, int file, int rank, int target_index)
     {
-        Bitboard source_mask = get_file_rank_bitboard(file, rank) & game.pieces[piece];
+        Bitboard source_mask = get_file_rank_bitboard(file, rank) & game.state.pieces[piece];
         Bitboard board = 0ULL;
         switch (piece)
         {
@@ -71,19 +74,19 @@ move_state_t parse_san(EnhancedPGNParser::SanContext *context, game_t &game)
         case B:
         case b:
         {
-            get_bishop_attacks(&board, target_index, game.occupancies[BOTH]);
+            get_bishop_attacks(&board, target_index, game.state.occupancies[BOTH]);
             break;
         }
         case R:
         case r:
         {
-            get_rook_attacks(&board, target_index, game.occupancies[BOTH]);
+            get_rook_attacks(&board, target_index, game.state.occupancies[BOTH]);
             break;
         }
         case Q:
         case q:
         {
-            get_queen_attacks(&board, target_index, game.occupancies[BOTH]);
+            get_queen_attacks(&board, target_index, game.state.occupancies[BOTH]);
             break;
         }
         }
@@ -100,9 +103,10 @@ move_state_t parse_san(EnhancedPGNParser::SanContext *context, game_t &game)
             };
             if (game.makeMove(m))
             {
-                return move_state_t{
+                move_node_t node = {
                     .move = m,
                     .state = game.getState()};
+                return movetree->addChild(node);
             }
             source_index = board.popls1b();
         }
@@ -124,7 +128,7 @@ move_state_t parse_san(EnhancedPGNParser::SanContext *context, game_t &game)
 
             int target_index = location_to_index(pawn_capture->LOCATION()->getText());
 
-            Bitboard pawns = ATTACK_BOARDS.pawn[1 - game.side][target_index] & file_mask;
+            Bitboard pawns = ATTACK_BOARDS.pawn[1 - game.state.side][target_index] & file_mask;
             int source_index = pawns.popls1b();
             if (source_index == -1)
                 throw std::runtime_error("Invalid move");
@@ -133,13 +137,13 @@ move_state_t parse_san(EnhancedPGNParser::SanContext *context, game_t &game)
             {
                 int p = pawn_capture->piece()->getText()[0];
                 promotion = CHAR_EPIECE_MAP[p];
-                if (game.side == BLACK)
+                if (game.state.side == BLACK)
                     promotion += 6;
             }
             return add_move({
                 .source = (uint32_t)source_index,
                 .target = (uint32_t)target_index,
-                .piece = (uint32_t)(game.side == WHITE ? P : p),
+                .piece = (uint32_t)(game.state.side == WHITE ? P : p),
                 .promotion = (uint32_t)promotion,
                 .capture = (uint)no_piece,
             });
@@ -150,7 +154,7 @@ move_state_t parse_san(EnhancedPGNParser::SanContext *context, game_t &game)
         {
             int p = piece_capture->piece()->getText()[0];
             int piece = CHAR_EPIECE_MAP[p];
-            if (game.side == BLACK)
+            if (game.state.side == BLACK)
                 piece += 6;
 
             auto *f = piece_capture->FILE();
@@ -166,20 +170,20 @@ move_state_t parse_san(EnhancedPGNParser::SanContext *context, game_t &game)
     auto *pawn_move = context->pawn_move();
     if (pawn_move != nullptr)
     {
-        int piece = game.side == WHITE ? P : p;
+        int piece = game.state.side == WHITE ? P : p;
         int target_index = location_to_index(pawn_move->LOCATION()->getText());
         int promotion = no_piece;
         if (pawn_move->piece() != nullptr)
         {
             int p = pawn_move->piece()->getText()[0];
             promotion = CHAR_EPIECE_MAP[p];
-            if (game.side == BLACK)
+            if (game.state.side == BLACK)
                 promotion += 6;
         }
-        int increment = game.side == WHITE ? 8 : -8;
+        int increment = game.state.side == WHITE ? 8 : -8;
         int source_index = target_index + increment;
 
-        if (game.pieces[piece][source_index])
+        if (game.state.pieces[piece][source_index])
             return add_move({
                 .source = (uint32_t)source_index,
                 .target = (uint32_t)target_index,
@@ -189,7 +193,7 @@ move_state_t parse_san(EnhancedPGNParser::SanContext *context, game_t &game)
             });
 
         source_index += increment;
-        if (game.pieces[piece][source_index])
+        if (game.state.pieces[piece][source_index])
             return add_move({
                 .source = (uint32_t)source_index,
                 .target = (uint32_t)target_index,
@@ -205,7 +209,7 @@ move_state_t parse_san(EnhancedPGNParser::SanContext *context, game_t &game)
     {
         int p = piece_move->piece()->getText()[0];
         int piece = CHAR_EPIECE_MAP[p];
-        if (game.side == BLACK)
+        if (game.state.side == BLACK)
             piece += 6;
 
         auto *f = piece_move->FILE();
@@ -219,16 +223,16 @@ move_state_t parse_san(EnhancedPGNParser::SanContext *context, game_t &game)
     auto *castle = context->castle();
     if (castle != nullptr)
     {
-        int piece = game.side == WHITE ? K : k;
+        int piece = game.state.side == WHITE ? K : k;
 
         bool king_side = castle->SHORT_CASTLE() != nullptr;
-        int source_index = game.side == WHITE ? e1 : e8;
-        int target_index = game.side == WHITE ? g1 : g8;
-        int castling = game.side == WHITE ? WKCA : BKCA;
+        int source_index = game.state.side == WHITE ? e1 : e8;
+        int target_index = game.state.side == WHITE ? g1 : g8;
+        int castling = game.state.side == WHITE ? WKCA : BKCA;
         if (!king_side)
         {
-            target_index = game.side == WHITE ? c1 : c8;
-            castling = game.side == WHITE ? WQCA : BQCA;
+            target_index = game.state.side == WHITE ? c1 : c8;
+            castling = game.state.side == WHITE ? WQCA : BQCA;
         }
 
         return add_move({
@@ -243,34 +247,28 @@ move_state_t parse_san(EnhancedPGNParser::SanContext *context, game_t &game)
     throw std::runtime_error("Invalid move: Should not reach here");
 }
 
-move_tree_t *ParseTurn(EnhancedPGNParser::TurnContext *turn, move_tree_t *move_tree, game_t &game)
+movetree_t *ParseTurn(EnhancedPGNParser::TurnContext *turn, movetree_t *movetree)
 {
-    std::pair<move_tree_t *, game_t> white(move_tree, game), black(nullptr, game);
+    movetree_t *white = movetree, *black = nullptr, *mt = nullptr;
     // get moves
     for (auto *s : turn->san())
     {
-        auto move = parse_san(s, game);
-        if (move_tree->value == nullptr)
-            move_tree->value = new move_state_t(move);
-        else
-            move_tree = move_tree->AddChild(move);
+        mt = parse_san(s, s->number == 0 ? white : black);
         if (s->number == 0)
-            black = std::make_pair(move_tree, game);
+            black = mt;
     }
 
     // append alternate moves
     for (auto *al : turn->alternate_line())
     {
-        auto &side = al->number == 0 ? white : black;
-        auto *mt = side.first;
-        auto game = side.second;
+        auto *m = al->number == 0 ? white : black;
 
         for (auto *turn : al->turn())
         {
-            mt = ParseTurn(turn, mt, game);
+            m = ParseTurn(turn, m);
         }
     }
-    return move_tree;
+    return mt;
 }
 
 void pgn_parse(pgn_db_t *db, const char *filename)
@@ -294,18 +292,23 @@ void pgn_parse(pgn_db_t *db, const char *filename)
     for (auto &p : context->pgn_database()->pgn())
     {
         pgn_t pgn = {
-            .moves = new move_tree_t(),
+            .moves = new movetree_t({
+                .state = game_t::FromStartingPosition().getState(),
+            }),
         };
         std::vector<pair_t> pairs;
-        move_tree_t *move_tree = pgn.moves;
+        movetree_t *movetree = pgn.moves;
         game_t game = game_t::FromStartingPosition();
 
         for (auto &tag_pair : p->tag_pairs()->tag_pair())
         {
-            pairs.emplace_back(pair_t{
-                .key = tag_pair->tag_key()->getText().c_str(),
-                .value = tag_pair->tag_value()->getText().c_str(),
-            });
+            pair_t pair{
+                .key = new char[tag_pair->tag_key()->getText().size() + 1],
+                .value = new char[tag_pair->tag_value()->getText().size() + 1],
+            };
+            strcpy(pair.key, tag_pair->tag_key()->getText().c_str());
+            strcpy(pair.value, tag_pair->tag_value()->getText().c_str());
+            pairs.push_back(pair);
         }
         pgn.pairs = new pair_t[pairs.size()];
         memcpy(pgn.pairs, pairs.data(), pairs.size() * sizeof(pair_t));
@@ -315,7 +318,7 @@ void pgn_parse(pgn_db_t *db, const char *filename)
         {
             auto *turn = move_text_item->turn();
             if (turn != nullptr)
-                move_tree = ParseTurn(turn, move_tree, game);
+                movetree = ParseTurn(turn, movetree);
         }
 
         tmp_db.push_back(pgn);
@@ -325,7 +328,7 @@ void pgn_parse(pgn_db_t *db, const char *filename)
     db->n_pgns = tmp_db.size();
 }
 
-move_tree_t *pgn_moves(pgn_db_t *db, int index)
+movetree_t *pgn_moves(pgn_db_t *db, int index)
 {
     return db->pgns[index].moves;
 }
@@ -338,4 +341,59 @@ void free_pgn_db(pgn_db_t *db)
         delete[] db->pgns[i].pairs;
     }
     delete[] db->pgns;
+}
+
+void print_pgn(movetree_t *moves)
+{
+    while (moves != nullptr)
+    {
+        auto *parent = moves->getParent();
+        if (parent != nullptr)
+        {
+            auto state = moves->getData().state;
+            auto move = moves->getData().move;
+
+            if (state.side == BLACK)
+                printf("%d. ", state.full_move_number);
+            else
+                printf(" ");
+
+            char san[8];
+            move_to_san(move, &san[0]);
+            printf("%s ", san);
+
+            auto children = parent->getChildren();
+            if (children.size() && children[0] == moves)
+            {
+                for (size_t i = 1; i < children.size(); i++)
+                {
+                    auto &child = children[i];
+                    printf("(");
+                    auto state = child->getData().state;
+                    if (state.side == WHITE)
+                        printf("%d... ", state.full_move_number - 1);
+                    print_pgn(child);
+                    printf(")");
+                }
+            }
+        }
+
+        auto children = moves->getChildren();
+        moves = children.size() ? children[0] : nullptr;
+    }
+}
+
+void print_pgn_db(pgn_db_t *db)
+{
+    for (int i = 0; i < db->n_pgns; i++)
+    {
+        auto &pgn = db->pgns[i];
+        for (int j = 0; j < pgn.n_pairs; j++)
+        {
+            auto &pair = pgn.pairs[j];
+            printf("[%s \"%s\"]\n", pair.key, pair.value);
+        }
+        printf("\n");
+        print_pgn(pgn.moves);
+    }
 }
