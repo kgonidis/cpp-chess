@@ -230,6 +230,7 @@ std::vector<pgn_token_t> to_pgn(movetree_t *moves)
                 if (child_tokens.size())
                 {
                     std::string san = prepend + std::string(child_tokens[0].san);
+                    strcpy(child_tokens[0].san, san.c_str());
                     child_tokens[0].alternate_start = true;
                     child_tokens[0].newline = true;
                     child_tokens.back().alternate_end += 1;
