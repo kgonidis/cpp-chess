@@ -6,7 +6,7 @@ add_library(chessengine SHARED
     src/constants.c
     src/attacks.cpp
     src/movetree.cpp
-    src/parser.cpp
+    src/gametree.cpp
     gm/EnhancedPGNParser.cpp
     gm/EnhancedPGNLexer.cpp
 )

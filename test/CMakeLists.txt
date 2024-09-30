@@ -13,6 +13,19 @@ target_link_libraries(chessengine_test
     chessengine
 )
 
+add_executable(gametree_test
+    gametree_test.cpp
+)
+
+target_include_directories(gametree_test PUBLIC
+    ../ui/inc
+    ../lib/inc
+)
+
+target_link_libraries(gametree_test
+    mui
+    chessengine
+)
 
 add_executable(chessengine_c_test
     test.c

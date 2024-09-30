@@ -24,9 +24,41 @@ movetree_t *movetree_t::getParent() const
     return parent;
 }
 
+movetree_t *movetree_t::getNext() const
+{
+    if (children.size() == 0)
+        return nullptr;
+    return children[current_child];
+}
+
 std::vector<movetree_t *> movetree_t::getChildren() const
 {
     return children;
+}
+
+size_t movetree_t::getTabs() const
+{
+    return tab_level;
+}
+
+void movetree_t::setLine()
+{
+    if (parent == nullptr)
+        return;
+    for (size_t i = 0; i < parent->children.size(); i++)
+    {
+        if (parent->children[i] == this)
+        {
+            parent->current_child = i;
+            break;
+        }
+    }
+    parent->setLine();
+}
+
+void movetree_t::setData(const move_node_t &data)
+{
+    this->data = data;
 }
 
 movetree_t *movetree_t::addChild(const move_node_t &data)

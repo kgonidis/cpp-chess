@@ -14,13 +14,20 @@ private:
     movetree_t *parent;
     std::vector<movetree_t *> children;
     size_t tab_level;
+    size_t current_child;
 
 public:
     movetree_t();
     movetree_t(const move_node_t &data, movetree_t *parent = nullptr, size_t tab_level = 0);
+
     move_node_t getData() const;
     movetree_t *getParent() const;
+    movetree_t *getNext() const;
     std::vector<movetree_t *> getChildren() const;
+    size_t getTabs() const;
+
+    void setLine();
+    void setData(const move_node_t &data);
     movetree_t *addChild(const move_node_t &data);
 };
 #else

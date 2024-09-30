@@ -59,12 +59,13 @@ public:
 class ChessBoard : public ui::ImGuiGLWindow
 {
 private:
-    game_t game;
+    gametree_t gametree;
     std::unique_ptr<PieceTexture> pieces;
 
 public:
-    ChessBoard(unsigned int width, unsigned int height, const std::string &title)
-        : ui::ImGuiGLWindow(width, height, title),
+    ChessBoard(gametree_t gametree)
+        : ui::ImGuiGLWindow(1200, 780, "Test"),
+          gametree(gametree),
           pieces(nullptr)
     {
     }
@@ -73,7 +74,6 @@ public:
     {
         pieces = std::make_unique<PieceTexture>("assets/images/pieces.png");
         pieces->SetTargetWidth(75);
-        game = game_t::FromStartingPosition();
         return true;
     }
 
@@ -81,11 +81,97 @@ public:
     {
 
         auto io = ui::GetIO();
-        bool showdemo = true;
+        bool showdemo = false;
         ui::ShowDemoWindow(&showdemo);
+
+        ui::Begin("PGN");
+
+        ui::Text("PGN");
+
+        bool can_undo = gametree.getCurrent()->getParent() != nullptr;
+        if (!can_undo)
+        {
+            // disable undo button
+            ui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+            ui::PushStyleVar(ImGuiStyleVar_Alpha, ui::GetStyle().Alpha * 0.5f);
+        }
+        if (ui::Button("Undo"))
+        {
+            gametree.undoMove();
+        }
+        if (!can_undo)
+        {
+            ui::PopItemFlag();
+            ui::PopStyleVar();
+        }
+
+        bool can_redo = gametree.getNext() != nullptr;
+
+        if (!can_redo)
+        {
+            // disable redo button
+            ui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+            ui::PushStyleVar(ImGuiStyleVar_Alpha, ui::GetStyle().Alpha * 0.5f);
+        }
+        ui::SameLine();
+        if (ui::Button("Redo"))
+        {
+            gametree.redoMove();
+        }
+        if (!can_redo)
+        {
+            ui::PopItemFlag();
+            ui::PopStyleVar();
+        }
+
+        ui::NewLine();
+
+        // move number, side, fen
+        auto state = gametree.getPosition().state;
+        ui::Text("Move Number: %d, Side: %s", state.full_move_number, state.side == WHITE ? "White" : "Black");
+        ui::Text("FEN: %s", gametree.getPosition().toFEN().c_str());
+
+        ui::NewLine();
+        ui::Text("PGN");
+        ui::NewLine();
+
+        auto tokens = gametree.toPGN();
+        for (size_t i = 0; i < tokens.size(); i++)
+        {
+            auto token = tokens[i];
+            int tabs = 0;
+            if (token.newline)
+            {
+                ui::NewLine();
+                tabs = 20 * token.move->getTabs();
+            }
+            ui::SameLine(0, tabs);
+
+            std::string uid(token.san);
+            if (token.alternate_start)
+                uid = "+ (" + uid;
+            for (int i = 0; i < token.alternate_end; i++)
+                uid += ")";
+            uid += "##" + std::to_string(i);
+
+            bool current = token.move == gametree.getCurrent();
+            if (current)
+                ui::PushStyleColor(ImGuiCol_Button, IM_COL32(0, 255, 0, 255));
+
+            if (ui::Button(uid.c_str()))
+            {
+                gametree.setCurrent(token.move);
+            }
+
+            if (current)
+                ui::PopStyleColor();
+        }
+
+        ui::End();
 
         ui::Begin("ChessBoard");
 
+        auto game = gametree.getPosition();
         auto pos = ui::GetCurrentWindow()->DC.CursorPos;
         auto draw_list = ui::GetWindowDrawList();
         auto target_size = pieces->GetTargetSize();
@@ -120,7 +206,8 @@ public:
                     {
                         selected->target = square;
                         selected->promotion = no_piece;
-                        game.makeMove(*selected);
+                        gametree.makeMove(*selected);
+                        game = gametree.getPosition();
                         delete selected;
                         selected = nullptr;
                     }
@@ -160,10 +247,6 @@ public:
             }
         }
 
-        if (game.isCheckmated())
-        {
-            ui::OpenPopup("Checkmate");
-        }
         ui::End();
     }
 };
@@ -189,7 +272,7 @@ int main(int argc, char **argv)
     const char *f = argc > 1 ? argv[1] : "e4NYStyle.pgn";
     std::string filename = "assets/pgns/" + std::string(f);
 
-
-    ChessBoard board(1200, 780, "Test");
+    auto gametrees = gametree_t::FromPGN(filename.c_str());
+    ChessBoard board(gametrees[0]);
     board.Show();
 }
