@@ -1,6 +1,6 @@
-set(HOMEBREW_DIR /opt/homebrew)
+add_subdirectory(gm)
 
-add_library(chessengine SHARED
+add_library(chessengine STATIC 
     src/types.cpp
     src/game.cpp
     src/constants.c
@@ -14,9 +14,9 @@ add_library(chessengine SHARED
 target_include_directories(chessengine PUBLIC
     inc
     gm
-    ${HOMEBREW_DIR}/include/antlr4-runtime
+    ${PROJECT_SOURCE_DIR}/vendor/antlr4/runtime/Cpp/runtime/src
 )
 
 target_link_libraries(chessengine PUBLIC
-    ${HOMEBREW_DIR}/lib/libantlr4-runtime.a
+    antlr4_static
 )
