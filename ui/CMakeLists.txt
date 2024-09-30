@@ -1,8 +1,8 @@
 # message if INCLUDE_UI is not set
 
-set(IMGUI_DIR ../vendor/imgui)
-set(GLM_DIR ../vendor/glm)
-set(STB_DIR ../vendor/stb)
+set(IMGUI_DIR ${CHESSENGINE_ROOT_DIR}/vendor/imgui)
+set(GLM_DIR ${CHESSENGINE_ROOT_DIR}/vendor/glm)
+set(STB_DIR ${CHESSENGINE_ROOT_DIR}/vendor/stb)
 
 # imgui sources, glfw opengl3 backend
 file(GLOB UI_SOURCES src/*.cpp)

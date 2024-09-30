@@ -14,7 +14,7 @@ add_library(chessengine STATIC
 target_include_directories(chessengine PUBLIC
     inc
     gm
-    ${PROJECT_SOURCE_DIR}/vendor/antlr4/runtime/Cpp/runtime/src
+    ${CHESSENGINE_ROOT_DIR}/vendor/antlr4/runtime/Cpp/runtime/src
 )
 
 target_link_libraries(chessengine PUBLIC

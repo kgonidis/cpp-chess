@@ -8,7 +8,7 @@ if(NOT ANTLR_BUILD_SHARED AND NOT ANTLR_BUILD_STATIC)
     message(FATAL_ERROR "Options ANTLR_BUILD_SHARED and ANTLR_BUILD_STATIC can't both be OFF")
 endif()
 
-set(ANTLR4_RUNTIME_DIR ${PROJECT_SOURCE_DIR}/vendor/antlr4/runtime/Cpp)
+set(ANTLR4_RUNTIME_DIR ${CHESSENGINE_ROOT_DIR}/vendor/antlr4/runtime/Cpp)
 
 include_directories(
     ${ANTLR4_RUNTIME_DIR}/runtime/src
