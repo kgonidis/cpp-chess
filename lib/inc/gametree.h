@@ -25,10 +25,12 @@ class gametree_t
 private:
     movetree_t *current;
     std::vector<pair_t> tags;
+    size_t n_tags;
 
 public:
     gametree_t();
-    gametree_t(movetree_t *root);
+    gametree_t(movetree_t *root, const std::vector<pair_t> &tags = {});
+    void operator delete(void *p);
     static std::vector<gametree_t> FromPGN(const char *pgn);
 
     game_t getPosition() const;
@@ -60,5 +62,27 @@ typedef struct gametree_s
 } gametree_t;
 
 #endif // __cplusplus
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+    int gametrees_from_pgn(gametree_t **gametrees, const char *pgn);
+    gametree_t *gametree_new();
+    void gametree_free(gametree_t *tree);
+    movetree_t *gametree_make_move(gametree_t *tree, move_t *move);
+    movetree_t *gametree_undo_move(gametree_t *tree);
+    movetree_t *gametree_redo_move(gametree_t *tree);
+    movetree_t *gametree_overwrite_move(gametree_t *tree, move_t *move);
+    movetree_t *gametree_get_current(gametree_t *tree);
+    movetree_t *gametree_get_root(gametree_t *tree);
+    movetree_t *gametree_get_next(gametree_t *tree);
+    movetree_t *gametree_get_prev(gametree_t *tree);
+    void gametree_get_position(gametree_t *tree, game_state_t *state);
+    int gametree_to_pgn(gametree_t *tree, pgn_token_t **pgn);
+    void gametree_set_current(gametree_t *tree, movetree_t *move, int setLine);
+#ifdef __cplusplus
+}
+#endif
 
 #endif // GAMETREE_H

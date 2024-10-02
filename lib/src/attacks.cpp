@@ -281,7 +281,7 @@ void attack_boards_init()
     if (ATTACK_BOARDS.initialized)
         return;
     // initialize leaper attack board
-    for (size_t square = 0; square < 64; square++)
+    for (int square = 0; square < 64; square++)
     {
         ATTACK_BOARDS.pawn[WHITE][square] = mask_pawn_attacks(WHITE, square);
         ATTACK_BOARDS.pawn[BLACK][square] = mask_pawn_attacks(BLACK, square);
@@ -317,7 +317,7 @@ void attack_boards_init()
                 Bitboard occupancy = set_occupancy(index, relevant_bits_count, attack_mask);
 
                 // init magic index
-                int magic_index = (occupancy * magic_numbers[square]) >> (64 - relevant_bits[square]);
+                size_t magic_index = (occupancy * magic_numbers[square]) >> (64 - relevant_bits[square]);
 
                 if (mask_type == BISHOP)
                     ATTACK_BOARDS.bishop[square][magic_index] = bishop_attacks_on_the_fly(square, occupancy);

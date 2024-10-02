@@ -10,21 +10,25 @@
 movetree_t *parse_turn(EnhancedPGNParser::TurnContext *turn, movetree_t *movetree);
 
 gametree_t::gametree_t()
-    : current(new movetree_t()), tags()
+    : current(new movetree_t()), tags(), n_tags(0)
 {
 }
 
-gametree_t::gametree_t(movetree_t *root)
-    : current(root), tags()
+gametree_t::gametree_t(movetree_t *root, const std::vector<pair_t> &tags)
+    : current(root), tags(tags), n_tags(0)
 {
+}
+
+void gametree_t::operator delete(void *p)
+{
+    gametree_t *g = (gametree_t *)p;
+    movetree_t *root = g->getRoot();
+    delete root;
 }
 
 std::vector<gametree_t> gametree_t::FromPGN(const char *pgn)
 {
-    std::ifstream stream(pgn);
-    if (!stream.is_open())
-        throw std::runtime_error("Could not open file " + std::string(pgn));
-
+    std::stringstream stream(pgn);
     antlr4::ANTLRInputStream input(stream);
 
     EnhancedPGNLexer lexer(&input);
@@ -46,6 +50,7 @@ std::vector<gametree_t> gametree_t::FromPGN(const char *pgn)
             gametree.tags.push_back({.key = tag_pair->tag_key()->getText().c_str(),
                                      .value = tag_pair->tag_value()->getText().c_str()});
         }
+        gametree.n_tags = gametree.tags.size();
 
         for (auto &move_text_item : p->move_text()->move_text_item())
         {
@@ -88,8 +93,13 @@ movetree_t *gametree_t::getRoot() const
     if (current == nullptr)
         return nullptr;
     movetree_t *root = current;
-    while (root->getParent() != nullptr)
-        root = root->getParent();
+    movetree_t *parent = root->getParent();
+    while (parent != nullptr)
+    {
+        root = parent;
+        parent = root->getParent();
+    }
+
     return root;
 }
 
@@ -575,3 +585,81 @@ movetree_t *parse_turn(EnhancedPGNParser::TurnContext *turn, movetree_t *movetre
     }
     return mt;
 }
+
+int gametrees_from_pgn(gametree_t **gametrees, const char *pgn)
+{
+    auto trees = gametree_t::FromPGN(pgn);
+    *gametrees = new gametree_t[trees.size()];
+    memccpy(*gametrees, trees.data(), (int)trees.size(), sizeof(gametree_t));
+    return (int)trees.size();
+}
+
+gametree_t *gametree_new()
+{
+    return new gametree_t();
+}
+
+void gametree_free(gametree_t *tree)
+{
+    delete tree;
+}
+
+movetree_t *gametree_make_move(gametree_t *tree, move_t *move)
+{
+    return tree->makeMove(*move);
+}
+
+movetree_t *gametree_undo_move(gametree_t *tree)
+{
+    return tree->undoMove();
+}
+
+movetree_t *gametree_redo_move(gametree_t *tree)
+{
+    return tree->redoMove();
+}
+
+movetree_t *gametree_overwrite_move(gametree_t *tree, move_t *move)
+{
+    return tree->overwriteMove(*move);
+}
+
+movetree_t *gametree_get_current(gametree_t *tree)
+{
+    return tree->getCurrent();
+}
+
+movetree_t *gametree_get_root(gametree_t *tree)
+{
+    return tree->getRoot();
+}
+
+movetree_t *gametree_get_next(gametree_t *tree)
+{
+    return tree->getNext();
+}
+
+movetree_t *gametree_get_prev(gametree_t *tree)
+{
+    return tree->getPrev();
+}
+
+void gametree_get_position(gametree_t *tree, game_state_t *state)
+{
+    *state = tree->getPosition().getState();
+}
+
+int gametree_to_pgn(gametree_t *tree, pgn_token_t **tokens)
+{
+    auto pgn = tree->toPGN();
+    *tokens = new pgn_token_t[pgn.size()];
+    memccpy(*tokens, pgn.data(), (int)pgn.size(), sizeof(pgn_token_t));
+    return (int)pgn.size();
+}
+
+void gametree_set_current(gametree_t *tree, movetree_t *move, int setLine)
+{
+    tree->setCurrent(move, setLine);
+}
+
+

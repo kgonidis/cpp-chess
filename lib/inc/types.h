@@ -174,16 +174,18 @@ public:
     // friend ostream operator
     friend std::ostream &operator<<(std::ostream &os, const Bitboard &b);
 
-private:
     u64 board;
 };
 #else
 
-typedef u64 Bitboard;
+typedef struct Bitboard_s
+{
+    u64 board;
+} Bitboard;
 
 #endif
 
-typedef struct
+typedef struct game_state_s
 {
     Bitboard pieces[12];
     Bitboard occupancies[3];
@@ -256,6 +258,5 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif // TYPES_H

@@ -15,10 +15,10 @@ const char *UNICODE_PIECES[12] = {"♟︎", "♞", "♝", "♜", "♛", "♚", "
 const int CHAR_EPIECE_MAP[] = {['P'] = P, ['N'] = N, ['B'] = B, ['R'] = R, ['Q'] = Q, ['K'] = K, ['p'] = p, ['n'] = n, ['b'] = b, ['r'] = r, ['q'] = q, ['k'] = k};
 const char PROMOTED_PIECES[] = {[Q] = 'q', [R] = 'r', [B] = 'b', [N] = 'n', [q] = 'q', [r] = 'r', [b] = 'b', [n] = 'n'};
 
-const Bitboard NOT_A_FILE = 18374403900871474942ULL;
-const Bitboard NOT_H_FILE = 9187201950435737471ULL;
-const Bitboard NOT_HG_FILE = 4557430888798830399ULL;
-const Bitboard NOT_AB_FILE = 18229723555195321596ULL;
+const Bitboard NOT_A_FILE = {18374403900871474942ULL};
+const Bitboard NOT_H_FILE = {9187201950435737471ULL};
+const Bitboard NOT_HG_FILE = {4557430888798830399ULL};
+const Bitboard NOT_AB_FILE = {18229723555195321596ULL};
 
 const int BISHOP_RELEVANT_BITS[64] = {
     6, 5, 5, 5, 5, 5, 5, 6,

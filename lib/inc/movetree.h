@@ -19,6 +19,7 @@ private:
 public:
     movetree_t();
     movetree_t(const move_node_t &data, movetree_t *parent = nullptr, size_t tab_level = 0);
+    ~movetree_t();
 
     move_node_t getData() const;
     movetree_t *getParent() const;
@@ -31,7 +32,8 @@ public:
     movetree_t *addChild(const move_node_t &data);
 };
 #else
-typedef struct movetree_s{
+typedef struct movetree_s
+{
     move_node_t data;
     struct movetree_s *parent;
     struct movetree_s **children;
