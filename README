@@ -1,0 +1,122 @@
+# ChessEngine Library
+
+# Table of Contents
+- [ChessEngine Library](#chessengine-library)
+- [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Features](#features)
+  - [Getting Started](#getting-started)
+    - [Prerequisites](#prerequisites)
+    - [Building the Library](#building-the-library)
+    - [Running the Engine](#running-the-engine)
+    - [iOS Build](#ios-build)
+  - [Project Structure](#project-structure)
+  - [Documentation](#documentation)
+    - [Header Files](#header-files)
+    - [Source Files](#source-files)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Acknowledgements](#acknowledgements)
+
+## Overview
+
+The ChessEngine library is a comprehensive chess engine designed to facilitate the development of chess applications. It provides a robust set of features for handling chess game logic, move generation, and game state management. The library is written in C++ and includes support for both C and C++ interfaces.
+
+## Features
+
+- **Game State Management**: Manage the state of a chess game, including piece positions, castling rights, en passant squares, and more.
+- **Move Generation**: Generate legal moves for all pieces, including special moves like castling and en passant.
+- **PGN Parsing**: Parse and generate Portable Game Notation (PGN) for recording and replaying chess games.
+- **Bitboard Representation**: Efficiently represent the chessboard and pieces using bitboards.
+- **Zobrist Hashing**: Use Zobrist hashing for fast game state comparison and transposition table implementation.
+- **Attack Patterns**: Precompute and store attack patterns for all pieces to speed up move generation.
+
+## Getting Started
+
+### Prerequisites
+
+- C++ compiler
+- CMake
+- Git
+
+### Building the Library
+
+1. Clone the repository:
+   ```sh
+   git clone --recurse-submodules <repository_url>
+   ```
+
+2. Create a build directory and navigate to it:
+   ```sh
+   mkdir build && cd build
+   ```
+
+3. Run CMake to configure the project:
+   ```sh
+   cmake ..
+   ```
+
+4. Build the project:
+   ```sh
+   cmake --build .
+   ```
+
+### Running the Engine
+
+To run the chess engine, use the following command:
+
+```sh
+./chessengine <path_to_pgn_file>
+```
+
+If no PGN file is provided, the engine will use a default file `e4NYStyle.pgn`.
+
+### iOS Build
+
+To build the project for iOS, use the `build_ios.sh` script:
+
+```sh
+./build_ios.sh
+```
+
+## Project Structure
+
+- `src/`: Contains the source code for the chess engine.
+- `include/`: Contains the header files for the chess engine.
+- `assets/`: Contains assets such as images and PGN files.
+- `tests/`: Contains test files for the chess engine.
+- [`vendor/`](command:_github.copilot.openRelativePath?%5B%7B%22scheme%22%3A%22file%22%2C%22authority%22%3A%22%22%2C%22path%22%3A%22%2FUsers%2Fkiron%2FSoftware%2Fchessengine%2Fvendor%2F%22%2C%22query%22%3A%22%22%2C%22fragment%22%3A%22%22%7D%2C%220567d909-5201-4572-b749-16a68978abad%22%5D "/Users/kiron/Software/chessengine/vendor/"): Contains third-party libraries used by the project.
+
+## Documentation
+
+### Header Files
+
+- `engine.h`: Main header file that includes all other headers.
+- `constants.h`: Defines various constants used throughout the project.
+- `attacks.h`: Functions for computing attack patterns for different pieces.
+- `movetree.h`: Defines the move tree structure for storing game moves.
+- `game.h`: Defines the game structure and functions for manipulating game states.
+- `types.h`: Defines various types and enums used in the project.
+- `gametree.h`: Functions for parsing and generating PGN files.
+
+### Source Files
+
+- `chessengine_test.c`: C test file for the chess engine.
+- `chessengine_test.cpp`: C++ test file for the chess engine.
+- `ui_test.cpp`: C++ file for testing the graphical user interface.
+
+## Contributing
+
+Contributions are welcome! Please fork the repository and submit a pull request with your changes.
+
+## License
+
+This project is licensed under the MIT License. See the [`LICENSE`](command:_github.copilot.openSymbolFromReferences?%5B%22%22%2C%5B%7B%22uri%22%3A%7B%22scheme%22%3A%22file%22%2C%22authority%22%3A%22%22%2C%22path%22%3A%22%2FUsers%2Fkiron%2FSoftware%2Fchessengine%2FREADME%22%2C%22query%22%3A%22%22%2C%22fragment%22%3A%22%22%7D%2C%22pos%22%3A%7B%22line%22%3A85%2C%22character%22%3A56%7D%7D%5D%2C%220567d909-5201-4572-b749-16a68978abad%22%5D "Go to definition") file for details.
+
+## Acknowledgements
+
+- [ImGui](https://github.com/ocornut/imgui)
+- [GLM](https://github.com/g-truc/glm)
+- [ANTLR4](https://github.com/antlr/antlr4)
+- [iOS-CMake](https://github.com/leetal/ios-cmake)
+
