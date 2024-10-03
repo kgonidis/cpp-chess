@@ -4,3 +4,4 @@ test.c
 .DS_Store
 imgui.ini
 test/assets
+ios/build

@@ -7,3 +7,6 @@
 [submodule "vendor/antlr4"]
 	path = vendor/antlr4
 	url = https://github.com/antlr/antlr4.git
+[submodule "ios/cmake"]
+	path = ios/cmake
+	url = https://github.com/leetal/ios-cmake.git
