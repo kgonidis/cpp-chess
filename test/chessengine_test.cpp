@@ -4,27 +4,19 @@
 #include <fstream>
 #include <sstream>
 
-int main(int argc, char **argv)
+#include <gtest/gtest.h>
+
+TEST(ChessEngine, PGNS)
 {
-    std::string filename  = "assets/pgns/" + std::string(argc > 1 ? argv[1] : "e4NYStyle.pgn");
+    std::string filename = "assets/pgns/e4NYStyle.pgn";
     std::ifstream file(filename.c_str());
-    if (!file.is_open())
-    {
-        std::cerr << "File not found: " << filename << std::endl;
-        return 1;
-    }
+    
+    EXPECT_EQ(file.is_open(), true);
 
     // read file into string
     std::stringstream buffer;
     buffer << file.rdbuf();
-    auto gametrees = gametree_t::FromPGN(buffer.str().c_str())[0];
+    auto trees = gametree_t::FromPGN(buffer.str().c_str());
 
-    gametrees.redoMove();
-    game_t game = gametrees.getPosition();
-    std::cout << game << std::endl;
-    gametrees.redoMove();
-
-    movetree_t *root = gametrees.getRoot();
-    delete root;
-    return 0;
+    EXPECT_EQ(trees.size(), 17);
 }
