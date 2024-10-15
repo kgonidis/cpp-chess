@@ -8,11 +8,11 @@
  */
 typedef struct
 {
-    char san[10]; ///< Standard Algebraic Notation for the move.
-    movetree_t *move; ///< Pointer to the move tree node.
-    uint8_t newline : 1; ///< Flag indicating if this token starts a new line.
+    char san[10];                ///< Standard Algebraic Notation for the move.
+    movetree_t *move;            ///< Pointer to the move tree node.
+    uint8_t newline : 1;         ///< Flag indicating if this token starts a new line.
     uint8_t alternate_start : 1; ///< Flag indicating if this token is the start of an alternate line.
-    uint8_t alternate_end : 6; ///< Flag indicating if this token is the end of an alternate line.
+    uint8_t alternate_end : 6;   ///< Flag indicating if this token is the end of an alternate line.
 } pgn_token_t;
 
 #ifdef __cplusplus
@@ -25,7 +25,7 @@ typedef struct
  */
 struct pair_t
 {
-    std::string key; ///< The key of the pair.
+    std::string key;   ///< The key of the pair.
     std::string value; ///< The value of the pair.
 };
 
@@ -35,9 +35,9 @@ struct pair_t
 class gametree_t
 {
 public:
-    movetree_t *current; ///< Pointer to the current move in the tree.
+    movetree_t *current;      ///< Pointer to the current move in the tree.
     std::vector<pair_t> tags; ///< Vector of tags associated with the game.
-    size_t n_tags; ///< Number of tags.
+    size_t n_tags;            ///< Number of tags.
 
     /**
      * @brief Default constructor.
@@ -50,58 +50,73 @@ public:
     ~gametree_t();
 
     /**
+     * @brief Equality operator for game trees.
+     *
+     * @param tree The game tree to compare with.
+     * @return true if the game trees are equal, false otherwise.
+     */
+    bool operator==(const gametree_t &tree) const;
+
+    /**
      * @brief Creates game trees from a PGN string.
-     * 
+     *
      * @param pgn The PGN string.
      * @return A vector of game trees.
      */
-    static std::vector<gametree_t> FromPGN(const char *pgn);
+    static std::vector<gametree_t> FromPgn(const char *pgn);
 
     /**
      * @brief Gets the current game position.
-     * 
+     *
      * @return The current game position.
      */
     game_t getPosition() const;
 
     /**
      * @brief Gets the current move in the tree.
-     * 
+     *
      * @return Pointer to the current move.
      */
     std::optional<movetree_t> getCurrent() const;
 
     /**
      * @brief Gets the next move in the tree.
-     * 
+     *
      * @return Pointer to the next move.
      */
     std::optional<movetree_t> getNext() const;
 
     /**
      * @brief Gets the previous move in the tree.
-     * 
+     *
      * @return Pointer to the previous move.
      */
     std::optional<movetree_t> getPrev() const;
 
     /**
      * @brief Gets the root of the move tree.
-     * 
+     *
      * @return Pointer to the root of the move tree.
      */
     std::optional<movetree_t> getRoot() const;
 
     /**
      * @brief Converts the game tree to a PGN string.
-     * 
+     *
      * @return A vector of PGN tokens.
      */
-    std::vector<pgn_token_t> toPGN() const;
+    std::vector<pgn_token_t> getPgnTokens() const;
+
+    /**
+     * @brief Converts the game tree to a PGN string.
+     *
+     * @return A string representing the game in PGN format.
+     */
+    std::string toPgn() const;
 
     /**
      * @brief Sets the current move in the tree.
-     * 
+     *
      * @param move Pointer to the move to set as current.
      * @param setLine Flag indicating if this move should be set as the main line (default is true).
      */
@@ -109,7 +124,7 @@ public:
 
     /**
      * @brief Makes a move and updates the game tree.
-     * 
+     *
      * @param move The move to make.
      * @param setLine Flag indicating if this move should be set as the main line (default is true).
      * @return Pointer to the new current move.
@@ -118,7 +133,7 @@ public:
 
     /**
      * @brief Overwrites the current move with a new move.
-     * 
+     *
      * @param move The new move to overwrite with.
      * @return Pointer to the new current move.
      */
@@ -126,7 +141,7 @@ public:
 
     /**
      * @brief Undoes the current move.
-     * 
+     *
      * @param setLine Flag indicating if the previous move should be set as the main line (default is false).
      * @return Pointer to the new current move.
      */
@@ -134,11 +149,12 @@ public:
 
     /**
      * @brief Redoes the current move.
-     * 
+     *
      * @param setLine Flag indicating if the next move should be set as the main line (default is false).
      * @return Pointer to the new current move.
      */
     std::optional<movetree_t> redoMove(bool setLine = false);
+
 private:
     std::shared_ptr<uint8_t> ref_count;
 };
@@ -150,7 +166,7 @@ private:
  */
 typedef struct pair_s
 {
-    char *key; ///< The key of the pair.
+    char *key;   ///< The key of the pair.
     char *value; ///< The value of the pair.
 } pair_t;
 
@@ -160,7 +176,7 @@ typedef struct pair_s
 typedef struct gametree_s
 {
     movetree_t *current; ///< Pointer to the current move in the tree.
-    pair_t *tags; ///< Array of tags associated with the game.
+    pair_t *tags;        ///< Array of tags associated with the game.
 } gametree_t;
 
 #endif // __cplusplus
@@ -172,7 +188,7 @@ extern "C"
 
     /**
      * @brief Creates game trees from a PGN string.
-     * 
+     *
      * @param gametrees Pointer to the array of game trees.
      * @param pgn The PGN string.
      * @return The number of game trees created.
@@ -181,21 +197,21 @@ extern "C"
 
     /**
      * @brief Initializes a new game tree.
-     * 
+     *
      * @return Pointer to the new game tree.
      */
     gametree_t *gametree_new();
 
     /**
      * @brief Frees the memory allocated for a game tree.
-     * 
+     *
      * @param tree Pointer to the game tree to free.
      */
     void gametree_free(gametree_t *tree);
 
     /**
      * @brief Makes a move and updates the game tree.
-     * 
+     *
      * @param tree Pointer to the game tree.
      * @param move Pointer to the move to make.
      * @return Pointer to the new current move.
@@ -204,7 +220,7 @@ extern "C"
 
     /**
      * @brief Undoes the current move.
-     * 
+     *
      * @param tree Pointer to the game tree.
      * @return Pointer to the new current move.
      */
@@ -212,7 +228,7 @@ extern "C"
 
     /**
      * @brief Redoes the current move.
-     * 
+     *
      * @param tree Pointer to the game tree.
      * @return Pointer to the new current move.
      */
@@ -220,7 +236,7 @@ extern "C"
 
     /**
      * @brief Overwrites the current move with a new move.
-     * 
+     *
      * @param tree Pointer to the game tree.
      * @param move Pointer to the new move to overwrite with.
      * @return Pointer to the new current move.
@@ -229,7 +245,7 @@ extern "C"
 
     /**
      * @brief Gets the current move in the tree.
-     * 
+     *
      * @param tree Pointer to the game tree.
      * @return Pointer to the current move.
      */
@@ -237,7 +253,7 @@ extern "C"
 
     /**
      * @brief Gets the root of the move tree.
-     * 
+     *
      * @param tree Pointer to the game tree.
      * @return Pointer to the root of the move tree.
      */
@@ -245,7 +261,7 @@ extern "C"
 
     /**
      * @brief Gets the next move in the tree.
-     * 
+     *
      * @param tree Pointer to the game tree.
      * @return Pointer to the next move.
      */
@@ -253,7 +269,7 @@ extern "C"
 
     /**
      * @brief Gets the previous move in the tree.
-     * 
+     *
      * @param tree Pointer to the game tree.
      * @return Pointer to the previous move.
      */
@@ -261,7 +277,7 @@ extern "C"
 
     /**
      * @brief Gets the current game position.
-     * 
+     *
      * @param tree Pointer to the game tree.
      * @param state Pointer to the game state to update.
      */
@@ -269,7 +285,7 @@ extern "C"
 
     /**
      * @brief Converts the game tree to a PGN string.
-     * 
+     *
      * @param tree Pointer to the game tree.
      * @param pgn Pointer to the array of PGN tokens.
      * @return The number of PGN tokens created.
@@ -278,7 +294,7 @@ extern "C"
 
     /**
      * @brief Sets the current move in the tree.
-     * 
+     *
      * @param tree Pointer to the game tree.
      * @param move Pointer to the move to set as current.
      * @param setLine Flag indicating if this move should be set as the main line.

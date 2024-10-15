@@ -137,7 +137,7 @@ public:
         ui::Text("PGN");
         ui::NewLine();
 
-        auto tokens = gametree.toPGN();
+        auto tokens = gametree.getPgnTokens();
         for (size_t i = 0; i < tokens.size(); i++)
         {
             auto token = tokens[i];
@@ -284,7 +284,7 @@ int main(int argc, char **argv)
     std::stringstream buffer;
     buffer << file.rdbuf();
 
-    auto gametrees = gametree_t::FromPGN(buffer.str().c_str());
+    auto gametrees = gametree_t::FromPgn(buffer.str().c_str());
     ChessBoard board(gametrees[0]);
     board.Show();
 }

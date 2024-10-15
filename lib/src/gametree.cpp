@@ -8,6 +8,10 @@
 #include <sstream>
 
 movetree_t *parse_turn(EnhancedPGNParser::TurnContext *turn, movetree_t *movetree);
+std::vector<pgn_token_t> to_pgn_tokens(movetree_t *moves);
+std::string to_pgn_string(movetree_t *moves);
+bool compare_moves(const move_t &move1, const move_t &move2);
+bool compare_nodes(const movetree_t *node1, const movetree_t *node2);
 
 gametree_t::gametree_t()
     : current(new movetree_t()), tags(), n_tags(0), ref_count(std::make_shared<uint8_t>(0))
@@ -30,7 +34,32 @@ gametree_t::~gametree_t()
     current = nullptr;
 }
 
-std::vector<gametree_t> gametree_t::FromPGN(const char *pgn)
+bool gametree_t::operator==(const gametree_t &tree) const
+{
+    // Compare tags
+    if (n_tags != tree.n_tags)
+    {
+        return false;
+    }
+
+    for (size_t i = 0; i < n_tags; ++i)
+    {
+        if (tags[i].key != tree.tags[i].key || tags[i].value != tree.tags[i].value)
+        {
+            return false;
+        }
+    }
+
+    auto root1 = getRoot();
+    auto root2 = tree.getRoot();
+    if (!root1.has_value() && !root2.has_value())
+        return true;
+    if (!root1.has_value() || !root2.has_value())
+        return false;
+    return compare_nodes(&root1.value(), &root2.value());
+}
+
+std::vector<gametree_t> gametree_t::FromPgn(const char *pgn)
 {
     std::stringstream stream(pgn);
     antlr4::ANTLRInputStream input(stream);
@@ -54,8 +83,11 @@ std::vector<gametree_t> gametree_t::FromPGN(const char *pgn)
 
         for (auto &tag_pair : p->tag_pairs()->tag_pair())
         {
-            gametree.tags.push_back({.key = tag_pair->tag_key()->getText().c_str(),
-                                     .value = tag_pair->tag_value()->getText().c_str()});
+            pair_t pair = {
+                .key = tag_pair->tag_key()->getText(),
+                .value = tag_pair->tag_value()->getText()};
+            pair.value = pair.value.substr(1, pair.value.size() - 2);
+            gametree.tags.push_back(pair);
         }
         gametree.n_tags = gametree.tags.size();
 
@@ -116,163 +148,30 @@ std::optional<movetree_t> gametree_t::getRoot() const
     return *root;
 }
 
-std::vector<pgn_token_t> to_pgn(movetree_t *moves)
-{
-    std::vector<pgn_token_t> tokens;
-    auto to_san = [](game_state_t state, move_t move, Bitboard pieces, Bitboard occupancies)
-    {
-        std::string san = "";
-        if (state.side == BLACK)
-            san += std::to_string(state.full_move_number) + ". ";
-
-        if (move.castling & e_castling::KCA)
-            return san + "O-O ";
-        if (move.castling & e_castling::QCA)
-            return san + "O-O-O ";
-
-        if (move.piece != e_piece::P && move.piece != e_piece::p)
-            san += ASCII_PIECES[move.piece % 6];
-        // if more than one piece can move to the target square
-
-        Bitboard attacks;
-        if (move.piece == e_piece::P)
-            attacks = ATTACK_BOARDS.pawn[BLACK][move.target];
-        else if (move.piece == e_piece::p)
-            attacks = ATTACK_BOARDS.pawn[WHITE][move.target];
-        else if (move.piece == e_piece::N || move.piece == e_piece::n)
-            attacks = ATTACK_BOARDS.knight[move.target];
-        else if (move.piece == e_piece::K || move.piece == e_piece::k)
-            attacks = ATTACK_BOARDS.king[move.target];
-        else if (move.piece == e_piece::B || move.piece == e_piece::b)
-            get_bishop_attacks(&attacks, move.target, occupancies);
-        else if (move.piece == e_piece::R || move.piece == e_piece::r)
-            get_rook_attacks(&attacks, move.target, occupancies);
-        else if (move.piece == e_piece::Q || move.piece == e_piece::q)
-            get_queen_attacks(&attacks, move.target, occupancies);
-
-        Bitboard is_attacked = pieces & attacks;
-        int n_attacks = is_attacked.count();
-        int row = move.source / 8;
-        int col = move.source % 8;
-        Bitboard row_board = 0xFFULL << (row * 8);
-        Bitboard col_board = 0x0101010101010101ULL << col;
-        bool same_row = Bitboard(row_board & is_attacked).count() > 1;
-        bool same_col = Bitboard(col_board & is_attacked).count() > 1;
-
-        // std::stringstream ss;
-        // ss << "piece: " << ASCII_PIECES[move.piece] << " target: " << CHAR_SQUARE_MAP[move.target] << std::endl;
-        // ss << "Pieces:\n"
-        //    << pieces << std::endl;
-        // ss << "Attacks:\n"
-        //    << attacks << std::endl;
-        // ss << "Is Attacked:\n"
-        //    << is_attacked << std::endl;
-        // ss << "N Attacks: " << n_attacks << std::endl;
-
-        if (move.capture != e_piece::no_piece)
-        {
-            if (move.piece == e_piece::P || move.piece == e_piece::p)
-            {
-                san += (char)(move.source % 8 + 'a');
-            }
-            else if (n_attacks > 1)
-            {
-                if (same_row)
-                    san += (char)(move.source % 8 + 'a');
-                if (same_col)
-                    san += (char)((64 - move.source) / 8 + '1');
-                if (!same_row && !same_col)
-                    san += (char)(move.source % 8 + 'a');
-            }
-            san += "x";
-        }
-        else if (move.piece != e_piece::P && move.piece != e_piece::p && n_attacks > 1)
-        {
-            if (same_row)
-                san += (char)(move.source % 8 + 'a');
-            if (same_col)
-                san += (char)((64 - move.source) / 8 + '1');
-            if (!same_row && !same_col)
-                san += (char)(move.source % 8 + 'a');
-        }
-
-        san += CHAR_SQUARE_MAP[move.target];
-
-        if (move.promotion != e_piece::no_piece)
-        {
-            san += "=";
-            san += ASCII_PIECES[move.promotion % 6];
-        }
-
-        if (move.checkmate)
-            san += "#";
-        else if (move.check)
-            san += "+";
-        san += " ";
-        return san;
-    };
-
-    if (moves->getParent() == nullptr)
-    {
-        auto children = moves->getChildren();
-        if (!children.size())
-            return tokens;
-        moves = children[0];
-    }
-
-    bool newLine = false;
-    while (moves != nullptr)
-    {
-        auto *parent = moves->getParent();
-        game_t preboard(parent->getData().state);
-        auto state = moves->getData().state;
-        auto move = moves->getData().move;
-
-        pgn_token_t token{
-            .move = moves,
-            .newline = newLine,
-            .alternate_start = false,
-            .alternate_end = 0};
-        auto san = to_san(state, move, preboard.state.pieces[move.piece], preboard.state.occupancies[BOTH]);
-        strcpy(token.san, san.c_str());
-        newLine = false;
-        tokens.push_back(token);
-
-        auto children = parent->getChildren();
-        if (children.size() > 1 && children[0] == moves)
-        {
-            newLine = true;
-            for (size_t i = 1; i < children.size(); i++)
-            {
-                auto &child = children[i];
-                auto state = child->getData().state;
-                std::string prepend = "";
-                if (state.side == WHITE)
-                    prepend = std::to_string(state.full_move_number - 1) + "... ";
-                auto child_tokens = to_pgn(child);
-                if (child_tokens.size())
-                {
-                    std::string san = prepend + std::string(child_tokens[0].san);
-                    strcpy(child_tokens[0].san, san.c_str());
-                    child_tokens[0].alternate_start = true;
-                    child_tokens[0].newline = true;
-                    child_tokens.back().alternate_end += 1;
-                    tokens.insert(tokens.end(), child_tokens.begin(), child_tokens.end());
-                }
-            }
-        }
-        children = moves->getChildren();
-        moves = children.size() ? children[0] : nullptr;
-    }
-    return tokens;
-}
-
-std::vector<pgn_token_t> gametree_t::toPGN() const
+std::vector<pgn_token_t> gametree_t::getPgnTokens() const
 {
     auto root = getRoot();
     if (!root.has_value())
         return {};
-    return to_pgn(&root.value());
+    return to_pgn_tokens(&root.value());
+}
+
+std::string gametree_t::toPgn() const
+{
+    std::string pgn = "";
+    for (auto &tag : tags)
+    {
+        pgn += "[" + std::string(tag.key) + " \"" + std::string(tag.value) + "\"]\n";
+    }
+    auto root = getRoot();
+    if (!root.has_value())
+        return pgn;
+
+    pgn += "\n" + to_pgn_string(&root.value());
+    // if last non whitespace character is not a checkmate symbol, add *
+    if (pgn.back() != '#' && pgn.back() != '+')
+        pgn += "*";
+    return pgn;
 }
 
 void gametree_t::setCurrent(movetree_t *move, bool setLine)
@@ -397,13 +296,13 @@ movetree_t *parse_san(EnhancedPGNParser::SanContext *context, movetree_t *movetr
         case N:
         case n:
         {
-            board = ATTACK_BOARDS.knight[target_index] & source_mask;
+            board = ATTACK_BOARDS.knight[target_index];
             break;
         }
         case K:
         case k:
         {
-            board = ATTACK_BOARDS.king[target_index] & source_mask;
+            board = ATTACK_BOARDS.king[target_index];
             break;
         }
         case B:
@@ -426,6 +325,7 @@ movetree_t *parse_san(EnhancedPGNParser::SanContext *context, movetree_t *movetr
         }
         }
 
+        board &= source_mask;
         int source_index = board.popls1b();
         while (source_index > -1)
         {
@@ -608,7 +508,7 @@ movetree_t *parse_turn(EnhancedPGNParser::TurnContext *turn, movetree_t *movetre
 
 int gametrees_from_pgn(gametree_t **gametrees, const char *pgn)
 {
-    auto trees = gametree_t::FromPGN(pgn);
+    auto trees = gametree_t::FromPgn(pgn);
     *gametrees = new gametree_t[trees.size()];
     memccpy(*gametrees, trees.data(), (int)trees.size(), sizeof(gametree_t));
     return (int)trees.size();
@@ -696,7 +596,7 @@ void gametree_get_position(gametree_t *tree, game_state_t *state)
 
 int gametree_to_pgn(gametree_t *tree, pgn_token_t **tokens)
 {
-    auto pgn = tree->toPGN();
+    auto pgn = tree->getPgnTokens();
     *tokens = new pgn_token_t[pgn.size()];
     memccpy(*tokens, pgn.data(), (int)pgn.size(), sizeof(pgn_token_t));
     return (int)pgn.size();
@@ -705,4 +605,350 @@ int gametree_to_pgn(gametree_t *tree, pgn_token_t **tokens)
 void gametree_set_current(gametree_t *tree, movetree_t *move, int setLine)
 {
     tree->setCurrent(move, setLine);
+}
+
+std::vector<pgn_token_t> to_pgn_tokens(movetree_t *moves)
+{
+    std::vector<pgn_token_t> tokens;
+    auto to_san = [](game_state_t state, move_t move, Bitboard pieces, Bitboard occupancies)
+    {
+        std::string san = "";
+        if (state.side == BLACK)
+            san += std::to_string(state.full_move_number) + ". ";
+
+        if (move.castling & e_castling::KCA)
+            return san + "O-O ";
+        if (move.castling & e_castling::QCA)
+            return san + "O-O-O ";
+
+        if (move.piece != e_piece::P && move.piece != e_piece::p)
+            san += ASCII_PIECES[move.piece % 6];
+        // if more than one piece can move to the target square
+
+        Bitboard attacks;
+        if (move.piece == e_piece::P)
+            attacks = ATTACK_BOARDS.pawn[BLACK][move.target];
+        else if (move.piece == e_piece::p)
+            attacks = ATTACK_BOARDS.pawn[WHITE][move.target];
+        else if (move.piece == e_piece::N || move.piece == e_piece::n)
+            attacks = ATTACK_BOARDS.knight[move.target];
+        else if (move.piece == e_piece::K || move.piece == e_piece::k)
+            attacks = ATTACK_BOARDS.king[move.target];
+        else if (move.piece == e_piece::B || move.piece == e_piece::b)
+            get_bishop_attacks(&attacks, move.target, occupancies);
+        else if (move.piece == e_piece::R || move.piece == e_piece::r)
+            get_rook_attacks(&attacks, move.target, occupancies);
+        else if (move.piece == e_piece::Q || move.piece == e_piece::q)
+            get_queen_attacks(&attacks, move.target, occupancies);
+
+        Bitboard is_attacked = pieces & attacks;
+        int n_attacks = is_attacked.count();
+        int row = move.source / 8;
+        int col = move.source % 8;
+        Bitboard row_board = 0xFFULL << (row * 8);
+        Bitboard col_board = 0x0101010101010101ULL << col;
+        bool same_row = Bitboard(row_board & is_attacked).count() > 1;
+        bool same_col = Bitboard(col_board & is_attacked).count() > 1;
+
+        // std::stringstream ss;
+        // ss << "piece: " << ASCII_PIECES[move.piece] << " target: " << CHAR_SQUARE_MAP[move.target] << std::endl;
+        // ss << "Pieces:\n"
+        //    << pieces << std::endl;
+        // ss << "Attacks:\n"
+        //    << attacks << std::endl;
+        // ss << "Is Attacked:\n"
+        //    << is_attacked << std::endl;
+        // ss << "N Attacks: " << n_attacks << std::endl;
+
+        if (move.capture != e_piece::no_piece)
+        {
+            if (move.piece == e_piece::P || move.piece == e_piece::p)
+            {
+                san += (char)(move.source % 8 + 'a');
+            }
+            else if (n_attacks > 1)
+            {
+                if (same_row)
+                    san += (char)(move.source % 8 + 'a');
+                if (same_col)
+                    san += (char)((64 - move.source) / 8 + '1');
+                if (!same_row && !same_col)
+                    san += (char)(move.source % 8 + 'a');
+            }
+            san += "x";
+        }
+        else if (move.piece != e_piece::P && move.piece != e_piece::p && n_attacks > 1)
+        {
+            if (same_row)
+                san += (char)(move.source % 8 + 'a');
+            if (same_col)
+                san += (char)((64 - move.source) / 8 + '1');
+            if (!same_row && !same_col)
+                san += (char)(move.source % 8 + 'a');
+        }
+
+        san += CHAR_SQUARE_MAP[move.target];
+
+        if (move.promotion != e_piece::no_piece)
+        {
+            san += "=";
+            san += ASCII_PIECES[move.promotion % 6];
+        }
+
+        if (move.checkmate)
+            san += "#";
+        else if (move.check)
+            san += "+";
+        san += " ";
+        return san;
+    };
+
+    if (moves->getParent() == nullptr)
+    {
+        auto children = moves->getChildren();
+        if (!children.size())
+            return tokens;
+        moves = children[0];
+    }
+
+    bool newLine = false;
+    while (moves != nullptr)
+    {
+        auto *parent = moves->getParent();
+        game_t preboard(parent->getData().state);
+        auto state = moves->getData().state;
+        auto move = moves->getData().move;
+
+        pgn_token_t token{
+            .move = moves,
+            .newline = newLine,
+            .alternate_start = false,
+            .alternate_end = 0};
+        auto san = to_san(state, move, preboard.state.pieces[move.piece], preboard.state.occupancies[BOTH]);
+        strcpy(token.san, san.c_str());
+        newLine = false;
+        tokens.push_back(token);
+
+        auto children = parent->getChildren();
+        if (children.size() > 1 && children[0] == moves)
+        {
+            newLine = true;
+            for (size_t i = 1; i < children.size(); i++)
+            {
+                auto &child = children[i];
+                auto state = child->getData().state;
+                std::string prepend = "";
+                if (state.side == WHITE)
+                    prepend = std::to_string(state.full_move_number - 1) + "... ";
+                auto child_tokens = to_pgn_tokens(child);
+                if (child_tokens.size())
+                {
+                    std::string san = prepend + std::string(child_tokens[0].san);
+                    strcpy(child_tokens[0].san, san.c_str());
+                    child_tokens[0].alternate_start = true;
+                    child_tokens[0].newline = true;
+                    child_tokens.back().alternate_end += 1;
+                    tokens.insert(tokens.end(), child_tokens.begin(), child_tokens.end());
+                }
+            }
+        }
+        children = moves->getChildren();
+        moves = children.size() ? children[0] : nullptr;
+    }
+    return tokens;
+}
+
+std::string to_pgn_string(movetree_t *moves)
+{
+    std::string pgn = "";
+    auto to_san = [](game_state_t state, move_t move, Bitboard pieces, Bitboard occupancies)
+    {
+        std::string san = "";
+        if (state.side == BLACK)
+            san += std::to_string(state.full_move_number) + ". ";
+
+        if (move.castling & e_castling::KCA)
+            return san + "O-O";
+        if (move.castling & e_castling::QCA)
+            return san + "O-O-O";
+
+        if (move.piece != e_piece::P && move.piece != e_piece::p)
+            san += ASCII_PIECES[move.piece % 6];
+        // if more than one piece can move to the target square
+
+        Bitboard attacks;
+        if (move.piece == e_piece::P)
+            attacks = ATTACK_BOARDS.pawn[BLACK][move.target];
+        else if (move.piece == e_piece::p)
+            attacks = ATTACK_BOARDS.pawn[WHITE][move.target];
+        else if (move.piece == e_piece::N || move.piece == e_piece::n)
+            attacks = ATTACK_BOARDS.knight[move.target];
+        else if (move.piece == e_piece::K || move.piece == e_piece::k)
+            attacks = ATTACK_BOARDS.king[move.target];
+        else if (move.piece == e_piece::B || move.piece == e_piece::b)
+            get_bishop_attacks(&attacks, move.target, occupancies);
+        else if (move.piece == e_piece::R || move.piece == e_piece::r)
+            get_rook_attacks(&attacks, move.target, occupancies);
+        else if (move.piece == e_piece::Q || move.piece == e_piece::q)
+            get_queen_attacks(&attacks, move.target, occupancies);
+
+        Bitboard is_attacked = pieces & attacks;
+        int n_attacks = is_attacked.count();
+        int row = move.source / 8;
+        int col = move.source % 8;
+        Bitboard row_board = 0xFFULL << (row * 8);
+        Bitboard col_board = 0x0101010101010101ULL << col;
+        bool same_row = Bitboard(row_board & is_attacked).count() > 1;
+        bool same_col = Bitboard(col_board & is_attacked).count() > 1;
+
+        // std::stringstream ss;
+        // ss << "piece: " << ASCII_PIECES[move.piece] << " target: " << CHAR_SQUARE_MAP[move.target] << std::endl;
+        // ss << "Pieces:\n"
+        //    << pieces << std::endl;
+        // ss << "Attacks:\n"
+        //    << attacks << std::endl;
+        // ss << "Is Attacked:\n"
+        //    << is_attacked << std::endl;
+        // ss << "N Attacks: " << n_attacks << std::endl;
+
+        if (move.capture != e_piece::no_piece)
+        {
+            if (move.piece == e_piece::P || move.piece == e_piece::p)
+            {
+                san += (char)(move.source % 8 + 'a');
+            }
+            else if (n_attacks > 1)
+            {
+                if (same_row)
+                    san += (char)(move.source % 8 + 'a');
+                if (same_col)
+                    san += (char)((64 - move.source) / 8 + '1');
+                if (!same_row && !same_col)
+                    san += (char)(move.source % 8 + 'a');
+            }
+            san += "x";
+        }
+        else if (move.piece != e_piece::P && move.piece != e_piece::p && n_attacks > 1)
+        {
+            if (same_row)
+                san += (char)(move.source % 8 + 'a');
+            if (same_col)
+                san += (char)((64 - move.source) / 8 + '1');
+            if (!same_row && !same_col)
+                san += (char)(move.source % 8 + 'a');
+        }
+
+        san += CHAR_SQUARE_MAP[move.target];
+
+        if (move.promotion != e_piece::no_piece)
+        {
+            san += "=";
+            san += ASCII_PIECES[move.promotion % 6];
+        }
+
+        if (move.checkmate)
+            san += "#";
+        else if (move.check)
+            san += "+";
+        return san;
+    };
+
+    if (moves->getParent() == nullptr)
+    {
+        auto children = moves->getChildren();
+        if (!children.size())
+            return pgn;
+        moves = children[0];
+    }
+
+    while (moves != nullptr)
+    {
+        auto *parent = moves->getParent();
+        game_t preboard(parent->getData().state);
+        auto state = moves->getData().state;
+        auto move = moves->getData().move;
+
+        pgn += to_san(state, move, preboard.state.pieces[move.piece], preboard.state.occupancies[BOTH]);
+
+        auto children = parent->getChildren();
+        if (children.size() > 1 && children[0] == moves)
+        {
+            for (size_t i = 1; i < children.size(); i++)
+            {
+                auto &child = children[i];
+                auto state = child->getData().state;
+                std::string prepend = " (";
+                if (state.side == WHITE)
+                    prepend += std::to_string(state.full_move_number - 1) + "... ";
+                pgn += prepend + to_pgn_string(child) + ")";
+            }
+        }
+        pgn += " ";
+        children = moves->getChildren();
+        moves = children.size() ? children[0] : nullptr;
+    }
+    return pgn;
+}
+
+bool compare_moves(const move_t &move1, const move_t &move2)
+{
+    return move1.capture == move2.capture &&
+           move1.castling == move2.castling &&
+           move1.check == move2.check &&
+           move1.checkmate == move2.checkmate &&
+           move1.draw == move2.draw &&
+           move1.enpassant == move2.enpassant &&
+           move1.fifty_move == move2.fifty_move &&
+           move1.gameover == move2.gameover &&
+           move1.piece == move2.piece &&
+           move1.promotion == move2.promotion &&
+           move1.source == move2.source &&
+           move1.stalemate == move2.stalemate &&
+           move1.target == move2.target &&
+           move1.threefold_repetition == move2.threefold_repetition;
+}
+
+// Function to compare two nodes
+bool compare_nodes(const movetree_t *node1, const movetree_t *node2)
+{
+    // If both nodes are nullptr, they are equal
+    if (node1 == nullptr && node2 == nullptr)
+    {
+        return true;
+    }
+
+    // If one node is nullptr and the other is not, they are not equal
+    if (node1 == nullptr || node2 == nullptr)
+    {
+        return false;
+    }
+
+    if (!compare_moves(node1->getData().move, node2->getData().move))
+    {
+        return false;
+    }
+
+    if (node1->getData().state.hash != node2->getData().state.hash)
+    {
+        return false;
+    }
+
+    auto children1 = node1->getChildren();
+    auto children2 = node2->getChildren();
+
+    // Recursively compare children
+    if (children1.size() != children2.size())
+    {
+        return false;
+    }
+
+    for (size_t i = 0; i < children1.size(); ++i)
+    {
+        if (!compare_nodes(children1[i], children2[i]))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
