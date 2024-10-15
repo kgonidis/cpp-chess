@@ -14,12 +14,14 @@ movetree_t::movetree_t(const move_node_t &data, movetree_t *parent, size_t tab_l
 {
 }
 
-movetree_t::~movetree_t()
+void movetree_t::deleteChildren()
 {
     for (auto child : children)
     {
+        child->deleteChildren();
         delete child;
     }
+    children.clear();
 }
 
 move_node_t movetree_t::getData() const

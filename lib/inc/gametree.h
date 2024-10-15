@@ -17,45 +17,37 @@ typedef struct
 
 #ifdef __cplusplus
 
+#include <optional>
+#include <memory>
+
 /**
  * @brief Represents a key-value pair.
  */
-typedef struct pair_s
+struct pair_t
 {
     std::string key; ///< The key of the pair.
     std::string value; ///< The value of the pair.
-} pair_t;
+};
 
 /**
  * @brief Represents a game tree for a chess game.
  */
 class gametree_t
 {
-private:
+public:
     movetree_t *current; ///< Pointer to the current move in the tree.
     std::vector<pair_t> tags; ///< Vector of tags associated with the game.
     size_t n_tags; ///< Number of tags.
 
-public:
     /**
      * @brief Default constructor.
      */
     gametree_t();
 
     /**
-     * @brief Constructs a game tree with a given root and optional tags.
-     * 
-     * @param root Pointer to the root of the move tree.
-     * @param tags Vector of tags (default is empty).
+     * @brief Destructor.
      */
-    gametree_t(movetree_t *root, const std::vector<pair_t> &tags = {});
-
-    /**
-     * @brief Custom delete operator.
-     * 
-     * @param p Pointer to the memory to delete.
-     */
-    void operator delete(void *p);
+    ~gametree_t();
 
     /**
      * @brief Creates game trees from a PGN string.
@@ -77,28 +69,28 @@ public:
      * 
      * @return Pointer to the current move.
      */
-    movetree_t *getCurrent() const;
+    std::optional<movetree_t> getCurrent() const;
 
     /**
      * @brief Gets the next move in the tree.
      * 
      * @return Pointer to the next move.
      */
-    movetree_t *getNext() const;
+    std::optional<movetree_t> getNext() const;
 
     /**
      * @brief Gets the previous move in the tree.
      * 
      * @return Pointer to the previous move.
      */
-    movetree_t *getPrev() const;
+    std::optional<movetree_t> getPrev() const;
 
     /**
      * @brief Gets the root of the move tree.
      * 
      * @return Pointer to the root of the move tree.
      */
-    movetree_t *getRoot() const;
+    std::optional<movetree_t> getRoot() const;
 
     /**
      * @brief Converts the game tree to a PGN string.
@@ -122,7 +114,7 @@ public:
      * @param setLine Flag indicating if this move should be set as the main line (default is true).
      * @return Pointer to the new current move.
      */
-    movetree_t *makeMove(move_t &move, bool setLine = true);
+    std::optional<movetree_t> makeMove(move_t &move, bool setLine = true);
 
     /**
      * @brief Overwrites the current move with a new move.
@@ -130,7 +122,7 @@ public:
      * @param move The new move to overwrite with.
      * @return Pointer to the new current move.
      */
-    movetree_t *overwriteMove(move_t &move);
+    std::optional<movetree_t> overwriteMove(move_t &move);
 
     /**
      * @brief Undoes the current move.
@@ -138,7 +130,7 @@ public:
      * @param setLine Flag indicating if the previous move should be set as the main line (default is false).
      * @return Pointer to the new current move.
      */
-    movetree_t *undoMove(bool setLine = false);
+    std::optional<movetree_t> undoMove(bool setLine = false);
 
     /**
      * @brief Redoes the current move.
@@ -146,7 +138,9 @@ public:
      * @param setLine Flag indicating if the next move should be set as the main line (default is false).
      * @return Pointer to the new current move.
      */
-    movetree_t *redoMove(bool setLine = false);
+    std::optional<movetree_t> redoMove(bool setLine = false);
+private:
+    std::shared_ptr<uint8_t> ref_count;
 };
 
 #else

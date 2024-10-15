@@ -34,10 +34,11 @@ public:
      */
     movetree_t(const move_node_t &data, movetree_t *parent = nullptr, size_t tab_level = 0);
 
+
     /**
-     * @brief Destructor.
+     * @brief deletes all the children of this node recursively.
      */
-    ~movetree_t();
+    void deleteChildren();
 
     /**
      * @brief Gets the data associated with this node.

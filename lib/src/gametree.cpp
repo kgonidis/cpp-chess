@@ -10,20 +10,24 @@
 movetree_t *parse_turn(EnhancedPGNParser::TurnContext *turn, movetree_t *movetree);
 
 gametree_t::gametree_t()
-    : current(new movetree_t()), tags(), n_tags(0)
+    : current(new movetree_t()), tags(), n_tags(0), ref_count(std::make_shared<uint8_t>(0))
 {
 }
 
-gametree_t::gametree_t(movetree_t *root, const std::vector<pair_t> &tags)
-    : current(root), tags(tags), n_tags(0)
+gametree_t::~gametree_t()
 {
-}
-
-void gametree_t::operator delete(void *p)
-{
-    gametree_t *g = (gametree_t *)p;
-    movetree_t *root = g->getRoot();
+    if (ref_count.use_count() > 1 || current == nullptr)
+        return;
+    movetree_t *root = current;
+    movetree_t *parent = root->getParent();
+    while (parent != nullptr)
+    {
+        root = parent;
+        parent = root->getParent();
+    }
+    root->deleteChildren();
     delete root;
+    current = nullptr;
 }
 
 std::vector<gametree_t> gametree_t::FromPGN(const char *pgn)
@@ -38,12 +42,15 @@ std::vector<gametree_t> gametree_t::FromPGN(const char *pgn)
     auto *context = parser.parse();
 
     std::vector<gametree_t> gametrees;
+    auto pgn_database = context->pgn_database()->pgn();
+    gametrees.resize(pgn_database.size());
 
-    for (auto &p : context->pgn_database()->pgn())
+    for (int i = 0; i < context->pgn_database()->pgn().size(); i++)
     {
-        gametree_t gametree;
+        auto *p = pgn_database[i];
+        gametree_t &gametree = gametrees[i];
         std::vector<pair_t> pairs;
-        movetree_t *movetree = gametree.getCurrent();
+        movetree_t *movetree = gametree.current;
 
         for (auto &tag_pair : p->tag_pairs()->tag_pair())
         {
@@ -58,7 +65,6 @@ std::vector<gametree_t> gametree_t::FromPGN(const char *pgn)
             if (turn != nullptr)
                 movetree = parse_turn(turn, movetree);
         }
-        gametrees.push_back(gametree);
     }
 
     return gametrees;
@@ -69,29 +75,37 @@ game_t gametree_t::getPosition() const
     return current != nullptr ? game_t(current->getData().state) : game_t();
 }
 
-movetree_t *gametree_t::getCurrent() const
-{
-    return current;
-}
-
-movetree_t *gametree_t::getNext() const
-{
-    if (current != nullptr)
-        return current->getNext();
-    return nullptr;
-}
-
-movetree_t *gametree_t::getPrev() const
-{
-    if (current != nullptr)
-        return current->getParent();
-    return nullptr;
-}
-
-movetree_t *gametree_t::getRoot() const
+std::optional<movetree_t> gametree_t::getCurrent() const
 {
     if (current == nullptr)
-        return nullptr;
+        return std::nullopt;
+    return *current;
+}
+
+std::optional<movetree_t> gametree_t::getNext() const
+{
+    if (current == nullptr)
+        return std::nullopt;
+    auto next = current->getNext();
+    if (next == nullptr)
+        return std::nullopt;
+    return *next;
+}
+
+std::optional<movetree_t> gametree_t::getPrev() const
+{
+    if (current == nullptr)
+        return std::nullopt;
+    auto prev = current->getParent();
+    if (prev == nullptr)
+        return std::nullopt;
+    return *prev;
+}
+
+std::optional<movetree_t> gametree_t::getRoot() const
+{
+    if (current == nullptr)
+        return std::nullopt;
     movetree_t *root = current;
     movetree_t *parent = root->getParent();
     while (parent != nullptr)
@@ -99,8 +113,7 @@ movetree_t *gametree_t::getRoot() const
         root = parent;
         parent = root->getParent();
     }
-
-    return root;
+    return *root;
 }
 
 std::vector<pgn_token_t> to_pgn(movetree_t *moves)
@@ -256,7 +269,10 @@ std::vector<pgn_token_t> to_pgn(movetree_t *moves)
 
 std::vector<pgn_token_t> gametree_t::toPGN() const
 {
-    return to_pgn(getRoot());
+    auto root = getRoot();
+    if (!root.has_value())
+        return {};
+    return to_pgn(&root.value());
 }
 
 void gametree_t::setCurrent(movetree_t *move, bool setLine)
@@ -268,26 +284,26 @@ void gametree_t::setCurrent(movetree_t *move, bool setLine)
     }
 }
 
-movetree_t *gametree_t::makeMove(move_t &move, bool setLine)
+std::optional<movetree_t> gametree_t::makeMove(move_t &move, bool setLine)
 {
     if (current == nullptr)
-        return nullptr;
+        return std::nullopt;
 
     auto game = getPosition();
 
     if (!game.makeMove(move))
-        return nullptr;
+        return std::nullopt;
 
     current = current->addChild({game.getState(), move});
     if (setLine)
         current->setLine();
-    return current;
+    return *current;
 }
 
-movetree_t *gametree_t::overwriteMove(move_t &move)
+std::optional<movetree_t> gametree_t::overwriteMove(move_t &move)
 {
     if (current == nullptr)
-        return nullptr;
+        return std::nullopt;
 
     auto next = current->getNext();
     if (next == nullptr)
@@ -295,32 +311,36 @@ movetree_t *gametree_t::overwriteMove(move_t &move)
 
     auto game = getPosition();
     if (!game.makeMove(move))
-        return nullptr;
+        return std::nullopt;
 
     next->setData({game.getState(), move});
-    return next;
+    return *next;
 }
 
-movetree_t *gametree_t::undoMove(bool setLine)
+std::optional<movetree_t> gametree_t::undoMove(bool setLine)
 {
-    auto prev = getPrev();
+    if (current == nullptr)
+        return std::nullopt;
+    auto prev = current->getParent();
     if (prev == nullptr)
-        return nullptr;
+        return std::nullopt;
     current = prev;
     if (setLine)
         current->setLine();
-    return current;
+    return *current;
 }
 
-movetree_t *gametree_t::redoMove(bool setLine)
+std::optional<movetree_t> gametree_t::redoMove(bool setLine)
 {
-    auto next = getNext();
+    if (current == nullptr)
+        return std::nullopt;
+    auto next = current->getNext();
     if (next == nullptr)
-        return nullptr;
+        return std::nullopt;
     current = next;
     if (setLine)
         current->setLine();
-    return current;
+    return *current;
 }
 
 movetree_t *parse_san(EnhancedPGNParser::SanContext *context, movetree_t *movetree)
@@ -606,42 +626,67 @@ void gametree_free(gametree_t *tree)
 
 movetree_t *gametree_make_move(gametree_t *tree, move_t *move)
 {
-    return tree->makeMove(*move);
+    auto result = tree->makeMove(*move);
+    if (!result.has_value())
+        return nullptr;
+    return tree->current;
 }
 
 movetree_t *gametree_undo_move(gametree_t *tree)
 {
-    return tree->undoMove();
+    auto result = tree->undoMove();
+    if (!result.has_value())
+        return nullptr;
+    return tree->current;
 }
 
 movetree_t *gametree_redo_move(gametree_t *tree)
 {
-    return tree->redoMove();
+    auto result = tree->redoMove();
+    if (!result.has_value())
+        return nullptr;
+    return tree->current;
 }
 
 movetree_t *gametree_overwrite_move(gametree_t *tree, move_t *move)
 {
-    return tree->overwriteMove(*move);
+    auto result = tree->overwriteMove(*move);
+    if (!result.has_value())
+        return nullptr;
+    return tree->current;
 }
 
 movetree_t *gametree_get_current(gametree_t *tree)
 {
-    return tree->getCurrent();
+    return tree->current;
 }
 
 movetree_t *gametree_get_root(gametree_t *tree)
 {
-    return tree->getRoot();
+    auto root = tree->current;
+    if (root == nullptr)
+        return nullptr;
+    auto parent = root->getParent();
+    while (parent != nullptr)
+    {
+        root = parent;
+        parent = root->getParent();
+    }
+    return root;
 }
 
 movetree_t *gametree_get_next(gametree_t *tree)
 {
-    return tree->getNext();
+    if (tree->current == nullptr)
+        return nullptr;
+    return tree->current->getNext();
 }
 
 movetree_t *gametree_get_prev(gametree_t *tree)
 {
-    return tree->getPrev();
+    if (tree->current == nullptr)
+        return nullptr;
+    return tree->current->getParent();
 }
 
 void gametree_get_position(gametree_t *tree, game_state_t *state)
@@ -661,5 +706,3 @@ void gametree_set_current(gametree_t *tree, movetree_t *move, int setLine)
 {
     tree->setCurrent(move, setLine);
 }
-
-
