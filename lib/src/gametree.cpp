@@ -12,6 +12,7 @@ std::vector<pgn_token_t> to_pgn_tokens(movetree_t *moves);
 std::string to_pgn_string(movetree_t *moves);
 bool compare_moves(const move_t &move1, const move_t &move2);
 bool compare_nodes(const movetree_t *node1, const movetree_t *node2);
+u64 to_hash(movetree_t *node);
 
 gametree_t::gametree_t()
     : current(new movetree_t()), tags(), n_tags(0), ref_count(std::make_shared<uint8_t>(0))
@@ -61,42 +62,49 @@ bool gametree_t::operator==(const gametree_t &tree) const
 
 std::vector<gametree_t> gametree_t::FromPgn(const char *pgn)
 {
-    std::stringstream stream(pgn);
-    antlr4::ANTLRInputStream input(stream);
-
-    EnhancedPGNLexer lexer(&input);
-    antlr4::CommonTokenStream tokens(&lexer);
-    EnhancedPGNParser parser(&tokens);
-
-    auto *context = parser.parse();
-
     std::vector<gametree_t> gametrees;
-    auto pgn_database = context->pgn_database()->pgn();
-    gametrees.resize(pgn_database.size());
-
-    for (int i = 0; i < context->pgn_database()->pgn().size(); i++)
+    try
     {
-        auto *p = pgn_database[i];
-        gametree_t &gametree = gametrees[i];
-        std::vector<pair_t> pairs;
-        movetree_t *movetree = gametree.current;
+        std::stringstream stream(pgn);
+        antlr4::ANTLRInputStream input(stream);
 
-        for (auto &tag_pair : p->tag_pairs()->tag_pair())
-        {
-            pair_t pair = {
-                .key = tag_pair->tag_key()->getText(),
-                .value = tag_pair->tag_value()->getText()};
-            pair.value = pair.value.substr(1, pair.value.size() - 2);
-            gametree.tags.push_back(pair);
-        }
-        gametree.n_tags = gametree.tags.size();
+        EnhancedPGNLexer lexer(&input);
+        antlr4::CommonTokenStream tokens(&lexer);
+        EnhancedPGNParser parser(&tokens);
 
-        for (auto &move_text_item : p->move_text()->move_text_item())
+        auto *context = parser.parse();
+
+        auto pgn_database = context->pgn_database()->pgn();
+        gametrees.resize(pgn_database.size());
+
+        for (int i = 0; i < context->pgn_database()->pgn().size(); i++)
         {
-            auto *turn = move_text_item->turn();
-            if (turn != nullptr)
-                movetree = parse_turn(turn, movetree);
+            auto *p = pgn_database[i];
+            gametree_t &gametree = gametrees[i];
+            movetree_t *movetree = gametree.current;
+
+            for (auto &tag_pair : p->tag_pairs()->tag_pair())
+            {
+                pair_t pair = {
+                    .key = tag_pair->tag_key()->getText(),
+                    .value = tag_pair->tag_value()->getText()};
+                pair.value = pair.value.substr(1, pair.value.size() - 2);
+                gametree.tags.push_back(pair);
+            }
+            gametree.n_tags = gametree.tags.size();
+
+            for (auto &move_text_item : p->move_text()->move_text_item())
+            {
+                auto *turn = move_text_item->turn();
+                if (turn != nullptr)
+                    movetree = parse_turn(turn, movetree);
+            }
         }
+    }
+    catch (std::exception &e)
+    {
+        std::cerr << "Error parsing PGN: " << e.what() << std::endl;
+        gametrees.clear();
     }
 
     return gametrees;
@@ -172,6 +180,14 @@ std::string gametree_t::toPgn() const
     if (pgn.back() != '#' && pgn.back() != '+')
         pgn += "*";
     return pgn;
+}
+
+u64 gametree_t::getHash() const
+{
+    auto root = getRoot();
+    if (!root.has_value())
+        return 0;
+    return to_hash(&root.value());
 }
 
 void gametree_t::setCurrent(movetree_t *move, bool setLine)
@@ -951,4 +967,17 @@ bool compare_nodes(const movetree_t *node1, const movetree_t *node2)
     }
 
     return true;
+}
+
+u64 to_hash(movetree_t *node)
+{
+    u64 hash = 0;
+    if (node == nullptr)
+        return hash;
+    hash ^= node->getData().state.hash;
+    for (auto child : node->getChildren())
+    {
+        hash ^= to_hash(child);
+    }
+    return hash;
 }

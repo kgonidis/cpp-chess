@@ -114,6 +114,8 @@ public:
      */
     std::string toPgn() const;
 
+    u64 getHash() const;
+
     /**
      * @brief Sets the current move in the tree.
      *
